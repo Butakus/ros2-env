@@ -1,0 +1,43 @@
+#compdef cb
+
+zstyle ':completion::complete:cb:*:descriptions' format '%B%d%b'
+zstyle ':completion::complete:cb:*:workspaces_list' group-name workspaces_list
+zstyle ':completion::complete:cb::' list-grouped
+
+zmodload zsh/mapfile
+
+function _cb() {
+  local ROSWS_CONFIG=${ROSWS_CONFIG:-$HOME/.config/ros2-env/workspaces}
+  local ret=1
+
+  local -a workspaces_list
+
+  workspaces_list=( "${(f)mapfile[$ROSWS_CONFIG]//$HOME/~}" )
+
+  # TODO use load_workspaces
+  typeset -A rosws_workspaces
+  while read -r line
+  do
+    arr=(${(s,:,)line})
+    ws_name=${arr[1]}
+    ws_path=${arr[2]}
+
+    # replace ~ from path to fix completion (#17)
+    ws_path=${ws_path/#\~/$HOME}
+
+    rosws_workspaces[$ws_name]=$ws_path
+  done < $ROSWS_CONFIG
+
+  _arguments -C \
+    '1: :->first_arg' && ret=0
+
+  local target=$words[1]
+  if [[ $state == first_arg ]]
+  then
+    _describe -t workspaces_list "Workspaces" workspaces_list && ret=0
+  fi
+
+  return $ret
+}
+
+_cb "$@"

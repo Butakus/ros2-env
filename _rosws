@@ -1,0 +1,75 @@
+#compdef rosws
+
+zstyle ':completion::complete:rosws:*:descriptions' format '%B%d%b'
+zstyle ':completion::complete:rosws:*:commands' group-name commands
+zstyle ':completion::complete:rosws:*:workspaces_list' group-name workspaces_list
+zstyle ':completion::complete:rosws::' list-grouped
+
+zmodload zsh/mapfile
+
+function _rosws() {
+  local ROSWS_CONFIG=${ROSWS_CONFIG:-$HOME/.config/ros2-env/workspaces}
+  local ret=1
+
+  local -a commands
+  local -a workspaces_list
+
+  workspaces_list=( "${(f)mapfile[$ROSWS_CONFIG]//$HOME/~}" )
+
+  typeset -A rosws_workspaces
+  while read -r line
+  do
+    arr=(${(s,:,)line})
+    ws_name=${arr[1]}
+    ws_path=${arr[2]}
+
+    # replace ~ from path to fix completion (#17)
+    ws_path=${ws_path/#\~/$HOME}
+
+    rosws_workspaces[$ws_name]=$ws_path
+  done < $ROSWS_CONFIG
+
+  commands=(
+    'activate:Set the given workspace as the active one'
+    'add:Adds the current working directory to your registered workspaces'
+    'rm:Removes the given workspace'
+    'list:Print all registered workspaces'
+    'show:Print info of given workspace (name and path)'
+    'path:Show the path to given workspace (pwd)'
+    'clean:Remove workspaces pointing to non-existent directories (will prompt unless --force is used)'
+    'help:Show this extremely helpful text'
+  )
+
+  _arguments -C \
+    '1: :->first_arg' \
+    '2: :->second_arg' && ret=0
+
+  local target=$words[2]
+
+  case $state in
+    first_arg)
+      _describe -t workspaces_list "Workspaces" workspaces_list && ret=0
+      _describe -t commands "Commands" commands && ret=0
+      ;;
+    second_arg)
+      case $target in
+        add\!|rm)
+          _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
+          ;;
+        add)
+          _message 'Write the name of your workspace' && ret=0
+          ;;
+        show)
+          _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
+          ;;
+        path)
+          _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return $ret
+}
+
+_rosws "$@"
