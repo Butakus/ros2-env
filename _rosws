@@ -37,14 +37,17 @@ function _rosws() {
     'show:Print info of given workspace (name and path)'
     'path:Show the path to given workspace (pwd)'
     'clean:Remove workspaces pointing to non-existent directories (will prompt unless --force is used)'
+    'cd:Change directory to the workspace. You can also cd to a dir inside the workspace'
     'help:Show this extremely helpful text'
   )
 
   _arguments -C \
     '1: :->first_arg' \
-    '2: :->second_arg' && ret=0
+    '2: :->second_arg' \
+    '3: :->third_arg' && ret=0
 
-  local target=$words[2]
+  local command=$words[2]
+  local ws_name=$words[3]
 
   case $state in
     first_arg)
@@ -52,7 +55,7 @@ function _rosws() {
       _describe -t commands "Commands" commands && ret=0
       ;;
     second_arg)
-      case $target in
+      case $command in
         add\!|rm)
           _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
           ;;
@@ -65,7 +68,17 @@ function _rosws() {
         path)
           _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
           ;;
+        cd)
+          _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
+          ;;
       esac
+      ;;
+    third_arg)
+        # Autocomplete directories with cd command if workspace is valid
+        if [[ $command == "cd" && -v rosws_workspaces[$ws_name] ]]; then
+          # complete sub directories from the workspace
+          _path_files -W "(${rosws_workspaces[$ws_name]})" -/ && ret=0
+        fi
       ;;
   esac
 

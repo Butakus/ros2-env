@@ -134,7 +134,7 @@ rosws list
 * Show information of given workspace:
 
 ```zsh
-rosws show
+rosws show foo
 ```
 
 * Show path (pwd) of given workspace:
@@ -151,7 +151,19 @@ rosws clean
 
 Use `rosws clean --force` to not be prompted with confirmation.
 
-* Print usage info:
+
+* Change directory to the workspace. You can also cd to any directory inside the workspace, with autocompletion.
+
+```zsh
+rosws cd foo
+# Or
+rosws cd foo src/awesome_package
+```
+
+Using `rosws cd` without any workspace will cd into the current active workspace.
+
+
+Print usage info:
 
 ```zsh
 rosws help

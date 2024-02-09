@@ -81,15 +81,16 @@ rosws_print_usage()
 Usage: rosws [command] [workspace]
 
 Commands:
-    <workspace>          Set the given workspace as the active one
-    activate <workspace> Set the given workspace as the active one
-    add <workspace>      Adds the current working directory to your registered workspaces
-    add                  Adds the current working directory to your registered workspaces with current directory's name
-    rm <workspace>       Removes the given workspace
-    list                 Print all registered workspaces
-    show <workspace>     Print info of given workspace (name and path)
-    path <workspace>     Show the path to given workspace (pwd)
-    clean                Remove workspaces pointing to non-existent directories (will prompt unless --force is used)
+    <workspace>            Set the given workspace as the active one
+    activate <workspace>   Set the given workspace as the active one
+    add <workspace>        Adds the current working directory to your registered workspaces
+    add                    Adds the current working directory to your registered workspaces with current directory's name
+    rm <workspace>         Removes the given workspace
+    list                   Print all registered workspaces
+    show <workspace>       Print info of given workspace (name and path)
+    path <workspace>       Show the path to given workspace (pwd)
+    clean                  Remove workspaces pointing to non-existent directories (will prompt unless --force is used)
+    cd <workspace> [<dir>] Change directory to the workspace. You can also cd to a dir inside the workspace.
 
     -v | --version  Print version
     -d | --debug    Exit after execution with exit codes (for testing)
@@ -304,7 +305,8 @@ rosws_show()
     fi
 }
 
-rosws_clean() {
+rosws_clean()
+{
     local force=$1
     local count=0
     local rosws_tmp=""
@@ -337,6 +339,38 @@ rosws_clean() {
             rosws_print_msg "$ROSWS_GREEN" "Cleanup complete. ${count} workspace(s) removed"
         else
             rosws_print_msg "$ROSWS_BLUE" "Cleanup aborted"
+        fi
+    fi
+}
+
+rosws_cd()
+{
+    local ws_name=$1
+    local subdir=$2
+
+    # Handle the case with no ws_name (cd to active ws)
+    if [[ -z $ws_name ]]
+    then
+        if [[ -z $ROSWS_ACTIVE_WS ]]
+        then
+            rosws_exit_fail "There is no active workspace. Use rosws <workspace> to activate a workspace"
+        elif [[ rosws_workspaces[$ROSWS_ACTIVE_WS] != "" ]]
+        then
+            cd ${rosws_workspaces[$ROSWS_ACTIVE_WS]/#\~/$HOME}/$subdir
+        else
+            rosws_exit_fail "Active workspace $ROSWS_ACTIVE_WS is not in the list of workspaces!\n"\
+                            "Please check your configuration and/or re-activate the workspace."
+
+        fi
+    elif [[ -z $rosws_workspaces[$ws_name] ]]
+    then
+        rosws_exit_fail "Unknown workspace '${ws_name}'"
+    else
+        if [[ $subdir != "" ]]
+        then
+            cd ${rosws_workspaces[$ws_name]/#\~/$HOME}/$subdir
+        else
+            cd ${rosws_workspaces[$ws_name]/#\~/$HOME}
         fi
     fi
 }
@@ -437,6 +471,10 @@ else
                 ;;
             "-c"|"--clean"|"clean")
                 rosws_clean "$rosws_force_mode"
+                break
+                ;;
+            "-d"|"--cd"|"cd")
+                rosws_cd "$2" "$3"
                 break
                 ;;
             *)
