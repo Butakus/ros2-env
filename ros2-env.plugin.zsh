@@ -31,5 +31,12 @@ alias rosclean='find ~/.ros/log/* -mtime +5 -exec rm -r {} \;'
 compdef _cb colcon_clean
 
 # Autocomplete fix for ros2 and colcon commands
-eval "$(register-python-argcomplete3 ros2)"
-eval "$(register-python-argcomplete3 colcon)"
+if command -v register-python-argcomplete3 &> /dev/null
+then
+    eval "$(register-python-argcomplete3 ros2)"
+    eval "$(register-python-argcomplete3 colcon)"
+elif command -v register-python-argcomplete &> /dev/null
+then
+    eval "$(register-python-argcomplete ros2)"
+    eval "$(register-python-argcomplete colcon)"
+fi
