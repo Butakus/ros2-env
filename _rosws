@@ -62,6 +62,9 @@ function _rosws() {
         add)
           _message 'Write the name of your workspace' && ret=0
           ;;
+        activate)
+          _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
+          ;;
         show)
           _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
           ;;

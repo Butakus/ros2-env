@@ -445,7 +445,7 @@ else
                 break
                 ;;
             "--activate"|"activate")
-                rosws_activate "$rosws_o" "$2"
+                rosws_activate "$2"
                 break
                 ;;
             "-r"|"--remove"|"rm")
@@ -478,7 +478,7 @@ else
                 break
                 ;;
             *)
-                rosws_activate "$rosws_o" "$2"
+                rosws_activate "$rosws_o"
                 break
                 ;;
             --)
