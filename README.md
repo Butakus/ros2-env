@@ -193,7 +193,23 @@ By default, this variable only includes the `--symlink-install` option.
 **Note:** In the future, `cb` will allow adding extra arguments that will be passed to colcon, to avoid setting the environment variable.
 
 ### ROS 2 distro
-TODO.
+
+It is possible to select a different distro (rolling, humble, etc.) for each workspace. By default, when a workspace is added, the value stored in `$ROS_DISTRO` is used. It is also possible to select a ROS distribution when adding a new workspace as shown in the following example:
+
+```zsh
+rosws add foo humble
+```
+
+When a workspace is activated, the system will first load the environment for its corresponding ROS distro from `/opt/ros/<distro>/setup.zsh`, and then it will source the workspace environment.
+
+If you want to only load the distribution environment, you can do it by using the `rosws distro` command:
+
+```zsh
+rosws distro <distro>
+```
+
+This will source the environment in `/opt/ros/<distro>/setup.zsh`, also setting the `$ROS_DISTRO` variable.
+
 
 ## Automatic workspace switching
 **Note: This is still WIP and is not implemented.**

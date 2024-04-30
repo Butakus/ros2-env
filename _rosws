@@ -12,16 +12,28 @@ function _rosws() {
   local ret=1
 
   local -a commands
-  local -a workspaces_list
-
-  workspaces_list=( "${(f)mapfile[$ROSWS_CONFIG]//$HOME/~}" )
+  local -a workspaces_list=( "${(f)mapfile[$ROSWS_CONFIG]//$HOME/~}" )
+  local -a ros_distros=(
+    ardent
+    bouncy
+    crystal
+    dashing
+    eloquent
+    foxy
+    galactic
+    humble
+    iron
+    jazzy
+    rolling
+  )
 
   typeset -A rosws_workspaces
   while read -r line
   do
-    arr=(${(s,:,)line})
+    local arr=(${(s,:,)line})
     ws_name=${arr[1]}
-    ws_path=${arr[2]}
+    ws_distro=${arr[2]}
+    ws_path=${arr[3]}
 
     # replace ~ from path to fix completion (#17)
     ws_path=${ws_path/#\~/$HOME}
@@ -31,6 +43,7 @@ function _rosws() {
 
   commands=(
     'activate:Set the given workspace as the active one'
+    'distro:Set and source the given ROS 2 distro (humble, iron, rolling, etc.)'
     'add:Adds the current working directory to your registered workspaces'
     'rm:Removes the given workspace'
     'list:Print all registered workspaces'
@@ -64,6 +77,9 @@ function _rosws() {
           ;;
         activate)
           _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
+          ;;
+        distro)
+          _describe -t ros_distros "ROS 2 Distros" ros_distros && ret=0
           ;;
         show)
           _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
