@@ -16,13 +16,6 @@ readonly ROSWS_YELLOW="\033[93m"
 readonly ROSWS_RED="\033[91m"
 readonly ROSWS_NOC="\033[m"
 
-# Temporarily set the ROS_DISTRO var to source the first setup
-# After this first source in /opt/..., this var will be properly set and exported
-# TODO: Find a proper way to configure this.
-#       Maybe add new subcommands to set distro and cb_extra_args.
-#       Those values can be persistent in a config file.
-# ROS_DISTRO=${ROS_DISTRO:-humble}
-
 ## functions
 
 # helpers
@@ -552,6 +545,7 @@ unset rosws_print_version
 unset rosws_o
 unset ws_distro
 unset ws_path
+unset parse_ws_data
 
 unset args
 

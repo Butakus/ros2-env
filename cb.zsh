@@ -11,12 +11,22 @@ readonly ROSWS_YELLOW="\033[93m"
 readonly ROSWS_RED="\033[91m"
 readonly ROSWS_NOC="\033[m"
 
-# Temporarily set the ROS_DISTRO var to source the first setup
-# After this first source in /opt/..., this var will be properly set and exported
-# TODO: Find a proper way to configure this.
-#       Maybe add new subcommands to set distro and cb_extra_args.
-#       Those values can be persistent in a config file.
-local ROS_DISTRO=${ROS_DISTRO:-humble}
+
+parse_ws_data()
+{
+    local ws_name=$1
+    if [[ ${rosws_workspaces[$ws_name]} != "" ]]
+    then
+        # Split the ws data into distro and path
+        local rosws_data=(${(s,:,)rosws_workspaces[$ws_name]})
+        ws_distro=${rosws_data[1]}
+        # join the rest of the path, in case it contains colons
+        ws_path=${(j,:,)rosws_data[2,-1]}
+        return 0
+    fi
+    # Return error if ws_name is not in the list
+    return 1
+}
 
 # TODO: Allow cb command to receive extra args and pass them to colcon.
 function _colcon_build_path()
@@ -42,7 +52,8 @@ source ${0:A:h}/load_workspaces.zsh
 load_workspaces
 
 # If no arguments, build the active workspace
-if [ -z "$1" ]
+local ws_name=$1
+if [ -z "$ws_name" ]
 then
     if [[ -v ROSWS_ACTIVE_WS ]]
     then
@@ -52,10 +63,12 @@ then
             echo "Active workspace $ROSWS_ACTIVE_WS is not in the list of workspaces!"
             echo "Please check your configuration and/or re-activate the workspace."
         else
+            parse_ws_data $ROSWS_ACTIVE_WS
             # Build the active ws
-            source /opt/ros/$ROS_DISTRO/setup.zsh
-            _colcon_build_path ${rosws_workspaces[$ROSWS_ACTIVE_WS]/#\~/$HOME}
-            source ${rosws_workspaces[$ROSWS_ACTIVE_WS]/#\~/$HOME}/install/local_setup.zsh
+            source /opt/ros/$ws_distro/setup.zsh
+            _colcon_build_path ${ws_path/#\~/$HOME}
+            # source $ws_path/#\~/$HOME}/install/local_setup.zsh
+            source "${ws_path/#\~/$HOME}/install/local_setup.zsh"
         fi
     else
         echo "There is no active workspace. Use rosws <workspace> to activate a workspace"
@@ -66,10 +79,17 @@ else
     then
         echo "Please enter a valid workspace. Use rosws list to see the list of registered workspaces."
     else
-        source /opt/ros/$ROS_DISTRO/setup.zsh
-        _colcon_build_path ${rosws_workspaces[$1]/#\~/$HOME}
-        source ${rosws_workspaces[$1]/#\~/$HOME}/install/local_setup.zsh
+        # TODO: Clear environment variables when switching to a different workspace
+        parse_ws_data $ws_name
+        source /opt/ros/$ws_distro/setup.zsh
+        _colcon_build_path ${ws_path/#\~/$HOME}
+        source "${ws_path/#\~/$HOME}/install/local_setup.zsh"
         # Now this will be the active workspace
         export ROSWS_ACTIVE_WS=$ws_name
     fi
 fi
+
+unset parse_ws_data
+unset ws_distro
+unset ws_path
+# unset _colcon_build_path
