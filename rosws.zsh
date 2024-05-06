@@ -172,13 +172,45 @@ rosws_distro()
 rosws_add()
 {
     local ws_name=$1
-    local force=$2
-    cmdnames=(add rm show list ls path clean help)
+    local distro=$2
+    local cmdnames=(add activate distro rm show cd list path clean help)
+    local -a ros_distros=(
+        ardent
+        bouncy
+        crystal
+        dashing
+        eloquent
+        foxy
+        galactic
+        humble
+        iron
+        jazzy
+        rolling
+    )
 
     if [[ $ws_name == "" ]]
     then
         ws_name=$(basename "$PWD")
     fi
+
+    # Set ROS 2 distro
+    if [[ $distro == "" ]]
+    then
+        # Set distro as $ROS_DISTRO if exists or raise error
+        if [[ -v ROS_DISTRO ]]
+        then
+            distro=$ROS_DISTRO
+        else
+            rosws_exit_fail "Distro not specified and \$ROS_DISTRO is not set"
+            return
+        fi
+    elif (( ! $ros_distros[(Ie)$distro] ))
+    then
+        # The given distro is not in the list
+        rosws_exit_fail "Distro '${distro}' does not exist"
+        return
+    fi
+
 
     if [[ $ws_name =~ "^[\.]+$" ]]
     then
@@ -192,10 +224,10 @@ rosws_add()
     elif (($cmdnames[(Ie)$ws_name]))
     then
         rosws_exit_fail "Workspace name cannot be a rosws command (see rosws -h for a full list)"
-    elif [[ ${rosws_workspaces[$ws_name]} == "" ]] || [ ! -z "$force" ]
+    elif [[ ${rosws_workspaces[$ws_name]} == "" ]] || [ ! -z "$rosws_force_mode" ]
     then
         rosws_remove "$ws_name" > /dev/null
-        printf "%q:%s\n" "${ws_name}" "${PWD/#$HOME/~}" >> "$ROSWS_CONFIG"
+        printf "%q:%s:%s\n" "${ws_name}" "${distro}" "${PWD/#$HOME/~}" >> "$ROSWS_CONFIG"
         if (whence sort >/dev/null); then
             local config_tmp=$(mktemp "${TMPDIR:-/tmp}/rosws.XXXXXXXXXX")
             # use 'cat' below to ensure we respect $ROSWS_CONFIG as a symlink
@@ -309,7 +341,6 @@ rosws_show()
 
 rosws_clean()
 {
-    local force=$1
     local count=0
     local rosws_tmp=""
 
@@ -335,7 +366,7 @@ rosws_clean()
     then
         rosws_print_msg "$ROSWS_BLUE" "No workspaces to clean, carry on!"
     else
-        if [ ! -z "$force" ] || rosws_yesorno "Removing ${count} workspaces. Continue? (y/n)"
+        if [ ! -z "$rosws_force_mode" ] || rosws_yesorno "Removing ${count} workspaces. Continue? (y/n)"
         then
             echo "$rosws_tmp" >! "$ROSWS_CONFIG"
             rosws_print_msg "$ROSWS_GREEN" "Cleanup complete. ${count} workspace(s) removed"
@@ -445,7 +476,7 @@ else
         case "$rosws_o"
             in
             "-a"|"--add"|"add")
-                rosws_add "$2" "$rosws_force_mode"
+                rosws_add "$2" "$3"
                 break
                 ;;
             "--activate"|"activate")
@@ -478,7 +509,7 @@ else
                 break
                 ;;
             "-c"|"--clean"|"clean")
-                rosws_clean "$rosws_force_mode"
+                rosws_clean
                 break
                 ;;
             "-d"|"--cd"|"cd")
