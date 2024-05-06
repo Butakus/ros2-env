@@ -138,7 +138,11 @@ parse_ws_data()
 # core
 activate_ws()
 {
-    parse_ws_data $ROSWS_ACTIVE_WS
+    local ws_name=$1
+    # Activate the workspace
+    export ROSWS_ACTIVE_WS=$ws_name
+
+    parse_ws_data $ws_name
     # Source ROS2 environment
     source /opt/ros/$ws_distro/setup.zsh
     # Source active workspace
@@ -152,20 +156,9 @@ rosws_activate()
 {
     local ws_name=$1
 
-    if [[ $ws_name =~ "^\.+$" ]]
+    if [[ ${rosws_workspaces[$ws_name]} != "" ]]
     then
-        if [[ $#1 < 2 ]]
-        then
-            rosws_exit_warn "Activate current directory?"
-        else
-            (( n = $#1 - 1 ))
-            cd -$n > /dev/null
-        fi
-    elif [[ ${rosws_workspaces[$ws_name]} != "" ]]
-    then
-        # Activate the workspace
-        export ROSWS_ACTIVE_WS=$ws_name
-        activate_ws
+        activate_ws $ws_name
     else
         rosws_exit_fail "Unknown workspace '${ws_name}'"
     fi
@@ -324,9 +317,9 @@ rosws_clean()
     do
         if [[ $line != "" ]]
         then
-            arr=(${(s,:,)line})
-            ws_name=${arr[1]}
-            ws_path=${arr[2]}
+            local arr=(${(s,:,)line})
+            local ws_name=${arr[1]}
+            local ws_path=${(j,:,)arr[3,-1]}
 
             if [ -d "${ws_path/#\~/$HOME}" ]
             then
