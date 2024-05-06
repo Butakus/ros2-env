@@ -21,12 +21,18 @@ function load_workspaces() {
     # load workspaces
     while read -r line
     do
+        # Config line example --> foo_ws:rolling:/path/to/foo_ws
         arr=(${(s,:,)line})
         ws_name=${arr[1]}
-        # join the rest, in case the path contains colons
-        ws_path=${(j,:,)arr[2,-1]}
-        rosws_workspaces[$ws_name]=$ws_path
+        # Save the distro and the path in an array
+        # join the rest of the path, in case it contains colons
+        ws_data=${(j,:,)arr[2,-1]}
+        # The value stored in ws_data contains the ROS distro and the path
+        # Example value after removing ws_name: --> rolling:/path/to/foo_ws
+        rosws_workspaces[$ws_name]=$ws_data
     done < "$ROSWS_CONFIG"
 
-    unset ws_path &> /dev/null # fixes issue #1 (from wd's original code)
+    unset ws_data &> /dev/null # fixes issue #1 (from wd's original code)
+    unset arr &> /dev/null
+    unset ws_name &> /dev/null
 }

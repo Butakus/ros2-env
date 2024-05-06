@@ -16,13 +16,6 @@ readonly ROSWS_YELLOW="\033[93m"
 readonly ROSWS_RED="\033[91m"
 readonly ROSWS_NOC="\033[m"
 
-# Temporarily set the ROS_DISTRO var to source the first setup
-# After this first source in /opt/..., this var will be properly set and exported
-# TODO: Find a proper way to configure this.
-#       Maybe add new subcommands to set distro and cb_extra_args.
-#       Those values can be persistent in a config file.
-local ROS_DISTRO=${ROS_DISTRO:-humble}
-
 ## functions
 
 # helpers
@@ -81,16 +74,18 @@ rosws_print_usage()
 Usage: rosws [command] [workspace]
 
 Commands:
-    <workspace>            Set the given workspace as the active one
-    activate <workspace>   Set the given workspace as the active one
-    add <workspace>        Adds the current working directory to your registered workspaces
-    add                    Adds the current working directory to your registered workspaces with current directory's name
-    rm <workspace>         Removes the given workspace
-    list                   Print all registered workspaces
-    show <workspace>       Print info of given workspace (name and path)
-    path <workspace>       Show the path to given workspace (pwd)
-    clean                  Remove workspaces pointing to non-existent directories (will prompt unless --force is used)
-    cd <workspace> [<dir>] Change directory to the workspace. You can also cd to a dir inside the workspace.
+    <workspace>               Set the given workspace as the active one
+    activate <workspace>      Set the given workspace as the active one
+    distro <distro>           Set and source the given ROS 2 distro (humble, iron, rolling, etc.)
+    add <workspace>           Adds the current working directory to your registered workspaces
+    add                       Adds the current working directory to your registered workspaces with current directory's name
+    add <workspace> <distro>  Adds the current working directory to your registered workspaces using a specific ROS distro
+    rm <workspace>            Removes the given workspace
+    list                      Print all registered workspaces
+    show <workspace>          Print info of given workspace (name and path)
+    path <workspace>          Show the path to given workspace (pwd)
+    clean                     Remove workspaces pointing to non-existent directories (will prompt unless --force is used)
+    cd <workspace> [<dir>]    Change directory to the workspace. You can also cd to a dir inside the workspace.
 
     -v | --version  Print version
     -d | --debug    Exit after execution with exit codes (for testing)
@@ -117,29 +112,34 @@ rosws_exit_warn()
     ROSWS_EXIT_CODE=1
 }
 
-rosws_getdir()
+parse_ws_data()
 {
-    local name_arg=$1
-
-    point=$(rosws_show "$name_arg")
-    dir=${point:28+$#name_arg+7}
-
-    if [[ -z $name_arg ]]; then
-        rosws_exit_fail "You must enter a workspace"
-        break
-    elif [[ -z $dir ]]; then
-        rosws_exit_fail "Unknown workspace '${name_arg}'"
-        break
+    local ws_name=$1
+    if [[ ${rosws_workspaces[$ws_name]} != "" ]]
+    then
+        # Split the ws data into distro and path
+        local rosws_data=(${(s,:,)rosws_workspaces[$ws_name]})
+        ws_distro=${rosws_data[1]}
+        # join the rest of the path, in case it contains colons
+        ws_path=${(j,:,)rosws_data[2,-1]}
+        return 0
     fi
+    # Return error if ws_name is not in the list
+    return 1
 }
 
 # core
 activate_ws()
 {
+    local ws_name=$1
+    # Activate the workspace
+    export ROSWS_ACTIVE_WS=$ws_name
+
+    parse_ws_data $ws_name
     # Source ROS2 environment
-    source /opt/ros/$ROS_DISTRO/setup.zsh
+    source /opt/ros/$ws_distro/setup.zsh
     # Source active workspace
-    source "${rosws_workspaces[$ROSWS_ACTIVE_WS]/#\~/$HOME}/install/local_setup.zsh"
+    source "${ws_path/#\~/$HOME}/install/local_setup.zsh"
 
     # Set a custom domain ID
     # export ROS_DOMAIN_ID=101
@@ -149,35 +149,61 @@ rosws_activate()
 {
     local ws_name=$1
 
-    if [[ $ws_name =~ "^\.+$" ]]
+    if [[ ${rosws_workspaces[$ws_name]} != "" ]]
     then
-        if [[ $#1 < 2 ]]
-        then
-            rosws_exit_warn "Activate current directory?"
-        else
-            (( n = $#1 - 1 ))
-            cd -$n > /dev/null
-        fi
-    elif [[ ${rosws_workspaces[$ws_name]} != "" ]]
-    then
-        # Activate the workspace
-        export ROSWS_ACTIVE_WS=$ws_name
-        activate_ws
+        activate_ws $ws_name
     else
         rosws_exit_fail "Unknown workspace '${ws_name}'"
     fi
 }
 
+rosws_distro()
+{
+    source /opt/ros/$1/setup.zsh || rosws_exit_fail "ROS distro '${1}' is not installed"
+}
+
 rosws_add()
 {
     local ws_name=$1
-    local force=$2
-    cmdnames=(add rm show list ls path clean help)
+    local distro=$2
+    local cmdnames=(add activate distro rm show cd list path clean help)
+    local -a ros_distros=(
+        ardent
+        bouncy
+        crystal
+        dashing
+        eloquent
+        foxy
+        galactic
+        humble
+        iron
+        jazzy
+        rolling
+    )
 
     if [[ $ws_name == "" ]]
     then
         ws_name=$(basename "$PWD")
     fi
+
+    # Set ROS 2 distro
+    if [[ $distro == "" ]]
+    then
+        # Set distro as $ROS_DISTRO if exists or raise error
+        if [[ -v ROS_DISTRO ]]
+        then
+            distro=$ROS_DISTRO
+        else
+            rosws_exit_fail "Distro not specified and \$ROS_DISTRO is not set"
+            return
+        fi
+    elif (( ! $ros_distros[(Ie)$distro] ))
+    then
+        # The given distro is not in the list
+        rosws_exit_fail "Distro '${distro}' does not exist"
+        return
+    fi
+
 
     if [[ $ws_name =~ "^[\.]+$" ]]
     then
@@ -191,10 +217,10 @@ rosws_add()
     elif (($cmdnames[(Ie)$ws_name]))
     then
         rosws_exit_fail "Workspace name cannot be a rosws command (see rosws -h for a full list)"
-    elif [[ ${rosws_workspaces[$ws_name]} == "" ]] || [ ! -z "$force" ]
+    elif [[ ${rosws_workspaces[$ws_name]} == "" ]] || [ ! -z "$rosws_force_mode" ]
     then
         rosws_remove "$ws_name" > /dev/null
-        printf "%q:%s\n" "${ws_name}" "${PWD/#$HOME/~}" >> "$ROSWS_CONFIG"
+        printf "%q:%s:%s\n" "${ws_name}" "${distro}" "${PWD/#$HOME/~}" >> "$ROSWS_CONFIG"
         if (whence sort >/dev/null); then
             local config_tmp=$(mktemp "${TMPDIR:-/tmp}/rosws.XXXXXXXXXX")
             # use 'cat' below to ensure we respect $ROSWS_CONFIG as a symlink
@@ -241,15 +267,15 @@ rosws_list_all()
 {
     rosws_print_msg "$ROSWS_BLUE" "All workspaces:"
 
-    entries=$(sed "s:${HOME}:~:g" "$ROSWS_CONFIG")
+    local entries=$(sed "s:${HOME}:~:g" "$ROSWS_CONFIG")
 
-    max_ws_name_length=0
+    local max_ws_name_length=0
     while IFS= read -r line
     do
-        arr=(${(s,:,)line})
-        ws_name=${arr[1]}
+        local arr=(${(s,:,)line})
+        local ws_name=${arr[1]}
 
-        length=${#ws_name}
+        local length=${#ws_name}
         if [[ length -gt max_ws_name_length ]]
         then
             max_ws_name_length=$length
@@ -262,15 +288,15 @@ rosws_list_all()
         then
             arr=(${(s,:,)line})
             ws_name=${arr[1]}
-            ws_path=${line#"${arr[1]}:"}
+            parse_ws_data $ws_name
 
             if [[ -z $rosws_quiet_mode ]]
             then
                 if [[ $ws_name == $ROSWS_ACTIVE_WS ]]
                 then
-                    printf "%${max_ws_name_length}s  ->  %s ${ROSWS_GREEN}(active)${ROSWS_NOC}\n" "$ws_name" "$ws_path"
+                    printf " * %${max_ws_name_length}s -- [$ws_distro] -->  %s ${ROSWS_GREEN}(active)${ROSWS_NOC}\n" "$ws_name" "$ws_path"
                 else
-                    printf "%${max_ws_name_length}s  ->  %s\n" "$ws_name" "$ws_path"
+                    printf " * %${max_ws_name_length}s -- [$ws_distro] -->  %s\n" "$ws_name" "$ws_path"
                 fi
             fi
         fi
@@ -279,13 +305,14 @@ rosws_list_all()
 
 rosws_path()
 {
-    rosws_getdir "$1"
-    echo "$(echo "$dir" | sed "s:~:${HOME}:g")"
+    parse_ws_data $1
+    echo "$(echo "$ws_path" | sed "s:~:${HOME}:g")"
 }
 
 rosws_show()
 {
     local ws_name=$1
+    parse_ws_data $ws_name
     # if there's an argument we look up the value
     if [[ -n $ws_name ]]
     then
@@ -295,9 +322,9 @@ rosws_show()
         else
             if [[ $ws_name == $ROSWS_ACTIVE_WS ]]
             then
-                rosws_print_msg "$ROSWS_GREEN" "Workspace: ${ROSWS_GREEN}$ws_name${ROSWS_NOC} -> $rosws_workspaces[$ws_name] ${ROSWS_GREEN}(active)${ROSWS_NOC}"
+                rosws_print_msg "$ROSWS_GREEN" "Workspace: ${ROSWS_GREEN}$ws_name${ROSWS_NOC} -- [$ws_distro] --> $ws_path ${ROSWS_GREEN}(active)${ROSWS_NOC}"
             else
-                rosws_print_msg "$ROSWS_GREEN" "Workspace: ${ROSWS_GREEN}$ws_name${ROSWS_NOC} -> $rosws_workspaces[$ws_name]"
+                rosws_print_msg "$ROSWS_GREEN" "Workspace: ${ROSWS_GREEN}$ws_name${ROSWS_NOC} -- [$ws_distro] --> $ws_path"
             fi
         fi
     else
@@ -307,7 +334,6 @@ rosws_show()
 
 rosws_clean()
 {
-    local force=$1
     local count=0
     local rosws_tmp=""
 
@@ -315,9 +341,9 @@ rosws_clean()
     do
         if [[ $line != "" ]]
         then
-            arr=(${(s,:,)line})
-            ws_name=${arr[1]}
-            ws_path=${arr[2]}
+            local arr=(${(s,:,)line})
+            local ws_name=${arr[1]}
+            local ws_path=${(j,:,)arr[3,-1]}
 
             if [ -d "${ws_path/#\~/$HOME}" ]
             then
@@ -333,7 +359,7 @@ rosws_clean()
     then
         rosws_print_msg "$ROSWS_BLUE" "No workspaces to clean, carry on!"
     else
-        if [ ! -z "$force" ] || rosws_yesorno "Removing ${count} workspaces. Continue? (y/n)"
+        if [ ! -z "$rosws_force_mode" ] || rosws_yesorno "Removing ${count} workspaces. Continue? (y/n)"
         then
             echo "$rosws_tmp" >! "$ROSWS_CONFIG"
             rosws_print_msg "$ROSWS_GREEN" "Cleanup complete. ${count} workspace(s) removed"
@@ -356,7 +382,8 @@ rosws_cd()
             rosws_exit_fail "There is no active workspace. Use rosws <workspace> to activate a workspace"
         elif [[ rosws_workspaces[$ROSWS_ACTIVE_WS] != "" ]]
         then
-            cd ${rosws_workspaces[$ROSWS_ACTIVE_WS]/#\~/$HOME}/$subdir
+            parse_ws_data $ROSWS_ACTIVE_WS
+            cd ${ws_path/#\~/$HOME}/$subdir
         else
             rosws_exit_fail "Active workspace $ROSWS_ACTIVE_WS is not in the list of workspaces!\n"\
                             "Please check your configuration and/or re-activate the workspace."
@@ -366,11 +393,12 @@ rosws_cd()
     then
         rosws_exit_fail "Unknown workspace '${ws_name}'"
     else
+        parse_ws_data $ws_name
         if [[ $subdir != "" ]]
         then
-            cd ${rosws_workspaces[$ws_name]/#\~/$HOME}/$subdir
+            cd ${ws_path/#\~/$HOME}/$subdir
         else
-            cd ${rosws_workspaces[$ws_name]/#\~/$HOME}
+            cd ${ws_path/#\~/$HOME}
         fi
     fi
 }
@@ -419,7 +447,7 @@ source ${0:A:h}/load_workspaces.zsh
 load_workspaces
 
 # get opts
-args=$(getopt -o a:r:c:lhs -l add:,activate:,rm:,clean,list,path:,help,show -- $*)
+args=$(getopt -o a:r:c:lhs -l add:,activate:,distro:,rm:,clean,list,path:,help,show -- $*)
 
 # check if no arguments were given, and that version is not set
 if [[ ($? -ne 0 || $#* -eq 0) && -z $rosws_print_version ]]
@@ -441,11 +469,15 @@ else
         case "$rosws_o"
             in
             "-a"|"--add"|"add")
-                rosws_add "$2" "$rosws_force_mode"
+                rosws_add "$2" "$3"
                 break
                 ;;
             "--activate"|"activate")
                 rosws_activate "$2"
+                break
+                ;;
+            "--distro"|"distro")
+                rosws_distro "$2"
                 break
                 ;;
             "-r"|"--remove"|"rm")
@@ -470,7 +502,7 @@ else
                 break
                 ;;
             "-c"|"--clean"|"clean")
-                rosws_clean "$rosws_force_mode"
+                rosws_clean
                 break
                 ;;
             "-d"|"--cd"|"cd")
@@ -503,7 +535,6 @@ unset rosws_extglob_is_set
 # unset -f rosws_show
 # unset -f rosws_clean
 # unset -f rosws_yesorno
-# unset -f rosws_getdir
 # unset -f rosws_exit_warn
 # unset -f rosws_exit_fail
 # unset -f rosws_print_msg
@@ -512,6 +543,9 @@ unset rosws_quiet_mode
 unset rosws_force_mode
 unset rosws_print_version
 unset rosws_o
+unset ws_distro
+unset ws_path
+unset parse_ws_data
 
 unset args
 

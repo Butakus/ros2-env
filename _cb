@@ -13,20 +13,11 @@ function _cb() {
   local -a workspaces_list
 
   workspaces_list=( "${(f)mapfile[$ROSWS_CONFIG]//$HOME/~}" )
-
-  # TODO use load_workspaces
-  typeset -A rosws_workspaces
-  while read -r line
+  # Format output to be a bit prettier
+  for ((i = 1; i <= $#workspaces_list; i++))
   do
-    arr=(${(s,:,)line})
-    ws_name=${arr[1]}
-    ws_path=${arr[2]}
-
-    # replace ~ from path to fix completion (#17)
-    ws_path=${ws_path/#\~/$HOME}
-
-    rosws_workspaces[$ws_name]=$ws_path
-  done < $ROSWS_CONFIG
+    workspaces_list[$i]=$(sed 's/:/ --> /2' <<<"$workspaces_list[$i]")
+  done
 
   _arguments -C \
     '1: :->first_arg' && ret=0
