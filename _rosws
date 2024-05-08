@@ -93,11 +93,18 @@ function _rosws() {
       esac
       ;;
     third_arg)
-        # Autocomplete directories with cd command if workspace is valid
-        if [[ $command == "cd" && -v rosws_workspaces[$ws_name] ]]; then
-          # complete sub directories from the workspace
-          _path_files -W "(${rosws_workspaces[$ws_name]})" -/ && ret=0
-        fi
+      case $command in
+        add)
+          _describe -t ros_distros "ROS 2 Distros" ros_distros && ret=0
+          ;;
+        cd)
+          # Autocomplete directories with cd command if workspace is valid
+          if [[ -v rosws_workspaces[$ws_name] ]]; then
+            # complete sub directories from the workspace
+            _path_files -W "(${rosws_workspaces[$ws_name]})" -/ && ret=0
+          fi
+          ;;
+      esac
       ;;
   esac
 
