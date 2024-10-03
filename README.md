@@ -108,7 +108,7 @@ rosws add foo
 
 If a workspace with the same name exists, use `rosws add foo --force` to overwrite it.
 
-**Note:** The workspace cannot contain colons (either the name or the path). This will conflict in how `rosws` stores the workspaces.
+**Note:** The workspace cannot contain colons (':') in neither the name nor the path. This will conflict in how `rosws` stores the workspaces.
 
 You can omit the workspace name to automatically use the current directory's name instead.
 
@@ -160,7 +160,7 @@ rosws cd foo
 rosws cd foo src/awesome_package
 ```
 
-Using `rosws cd` without any workspace will cd into the current active workspace.
+Using `rosws cd` without any additional argument will cd into the current active workspace.
 
 
 Print usage info:
@@ -174,7 +174,7 @@ The usage will be printed also if you call `rosws` with no command
 * Print the running version of `rosws`:
 
 ```zsh
-rosws version
+rosws --version
 ```
 
 ## Configuration
@@ -194,9 +194,10 @@ By default, this variable only includes the `--symlink-install` option.
 
 ### ROS 2 distro
 
-It is possible to select a different distro (rolling, humble, etc.) for each workspace. By default, when a workspace is added, the value stored in `$ROS_DISTRO` is used. It is also possible to select a ROS distribution when adding a new workspace as shown in the following example:
+It is possible to select a different distro (rolling, jazzy, etc.) when adding a new workspace. By default, the value stored in `$ROS_DISTRO` is used. Example:
 
 ```zsh
+# Add foo workspace with the ROS 2 humble setup
 rosws add foo humble
 ```
 
@@ -209,11 +210,3 @@ rosws distro <distro>
 ```
 
 This will source the environment in `/opt/ros/<distro>/setup.zsh`, also setting the `$ROS_DISTRO` variable.
-
-
-## Automatic workspace switching
-**Note: This is still WIP and is not implemented.**
-
-When changing the working directory (with cd, wd, etc.), if the current directory is in the list of workspaces, automatically set it as the active workspace.
-
-This behavior can be enabled/disabled by setting the environment variable `$ROSWS_AUTO` to 1/0.
