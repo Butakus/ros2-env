@@ -14,6 +14,7 @@ readonly ROSWS_NOC="\033[m"
 
 parse_ws_data()
 {
+    # TODO: Extract parent workspaces (if any) and store them in a new array $ws_parents
     local ws_name=$1
     if [[ ${rosws_workspaces[$ws_name]} != "" ]]
     then
@@ -66,8 +67,8 @@ then
             parse_ws_data $ROSWS_ACTIVE_WS
             # Build the active ws
             source /opt/ros/$ws_distro/setup.zsh
+            # TODO: Source all parent workspaces, if any
             _colcon_build_path ${ws_path/#\~/$HOME}
-            # source $ws_path/#\~/$HOME}/install/local_setup.zsh
             source "${ws_path/#\~/$HOME}/install/local_setup.zsh"
         fi
     else
@@ -75,13 +76,14 @@ then
     fi
 else
     # Custom workspace selected. Build it and set is as the active one
-    if [[ -z $rosws_workspaces[$1] ]]
+    if [[ -z $rosws_workspaces[$ws_name] ]]
     then
         echo "Please enter a valid workspace. Use rosws list to see the list of registered workspaces."
     else
         # TODO: Clear environment variables when switching to a different workspace
         parse_ws_data $ws_name
         source /opt/ros/$ws_distro/setup.zsh
+        # TODO: Source all parent workspaces, if any
         _colcon_build_path ${ws_path/#\~/$HOME}
         source "${ws_path/#\~/$HOME}/install/local_setup.zsh"
         # Now this will be the active workspace

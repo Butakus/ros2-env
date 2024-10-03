@@ -4,19 +4,17 @@ zstyle ':completion::complete:cb:*:descriptions' format '%B%d%b'
 zstyle ':completion::complete:cb:*:workspaces_list' group-name workspaces_list
 zstyle ':completion::complete:cb::' list-grouped
 
-zmodload zsh/mapfile
-
 function _cb() {
   local ROSWS_CONFIG=${ROSWS_CONFIG:-$HOME/.config/ros2-env/workspaces}
   local ret=1
 
   local -a workspaces_list
 
-  workspaces_list=( "${(f)mapfile[$ROSWS_CONFIG]//$HOME/~}" )
+  workspaces_list=( ${(f)"$(< $ROSWS_CONFIG)"} )
   # Format output to be a bit prettier
   for ((i = 1; i <= $#workspaces_list; i++))
   do
-    workspaces_list[$i]=$(sed 's/:/ --> /2' <<<"$workspaces_list[$i]")
+    workspaces_list[$i]=$(sed 's/:/ --> /2g' <<<"$workspaces_list[$i]")
   done
 
   _arguments -C \

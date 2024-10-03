@@ -68,6 +68,7 @@ rosws_print_msg()
     fi
 }
 
+# TODO: Update help test for add command to include usage of parent workspaces
 rosws_print_usage()
 {
     command cat <<- EOF
@@ -114,6 +115,7 @@ rosws_exit_warn()
 
 parse_ws_data()
 {
+    # TODO: Extract parent workspaces (if any) and store them in a new array $ws_parents
     local ws_name=$1
     if [[ ${rosws_workspaces[$ws_name]} != "" ]]
     then
@@ -131,6 +133,7 @@ parse_ws_data()
 # core
 activate_ws()
 {
+    # TODO: Iterate $ws_parents and source them before workspace (after ROS distro)
     local ws_name=$1
     # Activate the workspace
     export ROSWS_ACTIVE_WS=$ws_name
@@ -164,6 +167,7 @@ rosws_distro()
 
 rosws_add()
 {
+    # TODO: Define how to handle new list of parent_ws arguments
     local ws_name=$1
     local distro=$2
     local cmdnames=(add activate distro rm show cd list path clean help)
@@ -239,6 +243,7 @@ rosws_add()
 
 rosws_remove()
 {
+    # TODO: Validate that the rm command works after changing workspace file format
     local ws_list=$1
 
     if [[ "$ws_list" == "" ]]
@@ -265,6 +270,7 @@ rosws_remove()
 
 rosws_list_all()
 {
+    # TODO: For each workspace, also show the parent workspaces
     rosws_print_msg "$ROSWS_BLUE" "All workspaces:"
 
     local entries=$(sed "s:${HOME}:~:g" "$ROSWS_CONFIG")
@@ -311,6 +317,7 @@ rosws_path()
 
 rosws_show()
 {
+    # TODO: Also show the list parent workspaces
     local ws_name=$1
     parse_ws_data $ws_name
     # if there's an argument we look up the value
@@ -334,6 +341,7 @@ rosws_show()
 
 rosws_clean()
 {
+    # TODO: Validate that the clean command works after changing workspace file format
     local count=0
     local rosws_tmp=""
 
