@@ -115,15 +115,15 @@ rosws_exit_warn()
 
 parse_ws_data()
 {
-    # TODO: Extract parent workspaces (if any) and store them in a new array $ws_parents
     local ws_name=$1
     if [[ ${rosws_workspaces[$ws_name]} != "" ]]
     then
-        # Split the ws data into distro and path
+        # Split the ws data to extract distro and ws paths
         local rosws_data=(${(s,:,)rosws_workspaces[$ws_name]})
         ws_distro=${rosws_data[1]}
-        # join the rest of the path, in case it contains colons
-        ws_path=${(j,:,)rosws_data[2,-1]}
+        ws_path=${rosws_data[-1]}
+        # List of paths for parent workspaces to be sourced in cascade
+        ws_parents=(${rosws_data[2,-2]})
         return 0
     fi
     # Return error if ws_name is not in the list
@@ -133,19 +133,20 @@ parse_ws_data()
 # core
 activate_ws()
 {
-    # TODO: Iterate $ws_parents and source them before workspace (after ROS distro)
     local ws_name=$1
     # Activate the workspace
     export ROSWS_ACTIVE_WS=$ws_name
 
     parse_ws_data $ws_name
-    # Source ROS2 environment
+    # First source the base ROS distro environment
     source /opt/ros/$ws_distro/setup.zsh
+    # Source all parent workspaces, if any
+    for parent in $ws_parents
+    do
+        source $parent/install/local_setup.zsh
+    done
     # Source active workspace
     source "${ws_path/#\~/$HOME}/install/local_setup.zsh"
-
-    # Set a custom domain ID
-    # export ROS_DOMAIN_ID=101
 }
 
 rosws_activate()
@@ -243,7 +244,6 @@ rosws_add()
 
 rosws_remove()
 {
-    # TODO: Validate that the rm command works after changing workspace file format
     local ws_list=$1
 
     if [[ "$ws_list" == "" ]]
@@ -270,43 +270,42 @@ rosws_remove()
 
 rosws_list_all()
 {
-    # TODO: For each workspace, also show the parent workspaces
     rosws_print_msg "$ROSWS_BLUE" "All workspaces:"
 
     local entries=$(sed "s:${HOME}:~:g" "$ROSWS_CONFIG")
 
+    # Find the max length of all ws names
     local max_ws_name_length=0
-    while IFS= read -r line
+    for ws_name in "${(@k)rosws_workspaces}"
     do
-        local arr=(${(s,:,)line})
-        local ws_name=${arr[1]}
-
         local length=${#ws_name}
         if [[ length -gt max_ws_name_length ]]
         then
             max_ws_name_length=$length
         fi
-    done <<< "$entries"
+    done
 
-    while IFS= read -r line
+    for ws_name in "${(@k)rosws_workspaces}"
     do
-        if [[ $line != "" ]]
-        then
-            arr=(${(s,:,)line})
-            ws_name=${arr[1]}
-            parse_ws_data $ws_name
+        parse_ws_data $ws_name
 
-            if [[ -z $rosws_quiet_mode ]]
+        if [[ -z $rosws_quiet_mode ]]
+        then
+            # Build print line depending on parent workspaces and current activation
+            local parents_str=""
+            for parent_ws in $ws_parents
+            do
+                parents_str+="--> $parent_ws "
+            done
+            local active_str=""
+            if [[ $ws_name == $ROSWS_ACTIVE_WS ]]
             then
-                if [[ $ws_name == $ROSWS_ACTIVE_WS ]]
-                then
-                    printf " * %${max_ws_name_length}s -- [$ws_distro] -->  %s ${ROSWS_GREEN}(active)${ROSWS_NOC}\n" "$ws_name" "$ws_path"
-                else
-                    printf " * %${max_ws_name_length}s -- [$ws_distro] -->  %s\n" "$ws_name" "$ws_path"
-                fi
+                active_str="${ROSWS_GREEN}(active)${ROSWS_NOC}"
             fi
+            # Show info for this ws
+            printf " * %${max_ws_name_length}s -- [$ws_distro] $parents_str--> $ws_path $active_str\n" "$ws_name"
         fi
-    done <<< "$entries"
+    done
 }
 
 rosws_path()
@@ -317,7 +316,6 @@ rosws_path()
 
 rosws_show()
 {
-    # TODO: Also show the list parent workspaces
     local ws_name=$1
     parse_ws_data $ws_name
     # if there's an argument we look up the value
@@ -327,12 +325,19 @@ rosws_show()
         then
             rosws_print_msg "$ROSWS_BLUE" "No workspace named $ws_name"
         else
+            # Build print line depending on parent workspaces and current activation
+            local parents_str=""
+            for parent_ws in $ws_parents
+            do
+                parents_str+="--> $parent_ws "
+            done
+            local active_str=""
             if [[ $ws_name == $ROSWS_ACTIVE_WS ]]
             then
-                rosws_print_msg "$ROSWS_GREEN" "Workspace: ${ROSWS_GREEN}$ws_name${ROSWS_NOC} -- [$ws_distro] --> $ws_path ${ROSWS_GREEN}(active)${ROSWS_NOC}"
-            else
-                rosws_print_msg "$ROSWS_GREEN" "Workspace: ${ROSWS_GREEN}$ws_name${ROSWS_NOC} -- [$ws_distro] --> $ws_path"
+                active_str="${ROSWS_GREEN}(active)${ROSWS_NOC}"
             fi
+            # Show info for this ws
+            rosws_print_msg "$ROSWS_GREEN" "Workspace: ${ROSWS_GREEN}$ws_name${ROSWS_NOC} -- [$ws_distro] $parents_str--> $ws_path $active_str"
         fi
     else
         rosws_exit_fail "You must enter a workspace"
@@ -341,7 +346,7 @@ rosws_show()
 
 rosws_clean()
 {
-    # TODO: Validate that the clean command works after changing workspace file format
+    # TODO: This currently does not check parent workspaces
     local count=0
     local rosws_tmp=""
 
@@ -351,7 +356,7 @@ rosws_clean()
         then
             local arr=(${(s,:,)line})
             local ws_name=${arr[1]}
-            local ws_path=${(j,:,)arr[3,-1]}
+            local ws_path=${arr[-1]}
 
             if [ -d "${ws_path/#\~/$HOME}" ]
             then

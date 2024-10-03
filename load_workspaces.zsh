@@ -18,8 +18,8 @@ function load_workspaces() {
         touch "$ROSWS_CONFIG"
     fi
 
-    # load workspaces
-    while read -r line
+    local -a workspaces_list=( ${(f)"$(< $ROSWS_CONFIG)"} )
+    for line in $workspaces_list
     do
         # Config line example --> foo_ws:rolling:/path/to/foo_ws
         arr=(${(s,:,)line})
@@ -27,10 +27,12 @@ function load_workspaces() {
         # Save the distro and the path in an array
         # join the rest of the path, in case it contains colons
         ws_data=${(j,:,)arr[2,-1]}
-        # The value stored in ws_data contains the ROS distro and the path
+        # The value stored in ws_data contains the ROS distro,
+        # the paths of the parent workspaces, and the path of the final workspace
         # Example value after removing ws_name: --> rolling:/path/to/foo_ws
+        # Example with chained workspaces: --> rolling:/path/to/base_ws:/path/to/foo_ws
         rosws_workspaces[$ws_name]=$ws_data
-    done < "$ROSWS_CONFIG"
+    done
 
     unset ws_data &> /dev/null # fixes issue #1 (from wd's original code)
     unset arr &> /dev/null

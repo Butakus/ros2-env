@@ -14,15 +14,15 @@ readonly ROSWS_NOC="\033[m"
 
 parse_ws_data()
 {
-    # TODO: Extract parent workspaces (if any) and store them in a new array $ws_parents
     local ws_name=$1
     if [[ ${rosws_workspaces[$ws_name]} != "" ]]
     then
-        # Split the ws data into distro and path
+        # Split the ws data to extract distro and ws paths
         local rosws_data=(${(s,:,)rosws_workspaces[$ws_name]})
         ws_distro=${rosws_data[1]}
-        # join the rest of the path, in case it contains colons
-        ws_path=${(j,:,)rosws_data[2,-1]}
+        ws_path=${rosws_data[-1]}
+        # List of paths for parent workspaces to be sourced in cascade
+        ws_parents=(${rosws_data[2,-2]})
         return 0
     fi
     # Return error if ws_name is not in the list
@@ -65,9 +65,14 @@ then
             echo "Please check your configuration and/or re-activate the workspace."
         else
             parse_ws_data $ROSWS_ACTIVE_WS
-            # Build the active ws
+            # First source the base ROS distro environment
             source /opt/ros/$ws_distro/setup.zsh
-            # TODO: Source all parent workspaces, if any
+            # Source all parent workspaces, if any
+            for parent in $ws_parents
+            do
+                source $parent/install/local_setup.zsh
+            done
+            # Build and source the final workspace
             _colcon_build_path ${ws_path/#\~/$HOME}
             source "${ws_path/#\~/$HOME}/install/local_setup.zsh"
         fi
@@ -82,8 +87,14 @@ else
     else
         # TODO: Clear environment variables when switching to a different workspace
         parse_ws_data $ws_name
+        # First source the base ROS distro environment
         source /opt/ros/$ws_distro/setup.zsh
-        # TODO: Source all parent workspaces, if any
+        # Source all parent workspaces, if any
+        for parent in $ws_parents
+        do
+            source $parent/install/local_setup.zsh
+        done
+        # Build and source the final workspace
         _colcon_build_path ${ws_path/#\~/$HOME}
         source "${ws_path/#\~/$HOME}/install/local_setup.zsh"
         # Now this will be the active workspace
@@ -94,4 +105,5 @@ fi
 unset parse_ws_data
 unset ws_distro
 unset ws_path
+unset ws_parents
 # unset _colcon_build_path
