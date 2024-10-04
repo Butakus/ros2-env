@@ -68,7 +68,6 @@ rosws_print_msg()
     fi
 }
 
-# TODO: Update help test for add command to include usage of parent workspaces
 rosws_print_usage()
 {
     command cat <<- EOF
@@ -79,8 +78,9 @@ Commands:
     activate <workspace>      Set the given workspace as the active one
     distro <distro>           Set and source the given ROS 2 distro (humble, iron, rolling, etc.)
     add <workspace>           Adds the current working directory to your registered workspaces
-    add                       Adds the current working directory to your registered workspaces with current directory's name
-    add <workspace> <distro>  Adds the current working directory to your registered workspaces using a specific ROS distro
+    add                       Adds a new workspace with current directory's name
+    add <workspace> <distro>  Adds a new workspace using a specific ROS distro
+    add <workspace> <distro> [<parent dirs>]  Adds a new workspace using a specific ROS distro and a list of parent workspaces
     rm <workspace>            Removes the given workspace
     list                      Print all registered workspaces
     show <workspace>          Print info of given workspace (name and path)
@@ -168,9 +168,9 @@ rosws_distro()
 
 rosws_add()
 {
-    # TODO: Define how to handle new list of parent_ws arguments
     local ws_name=$1
     local distro=$2
+    local ws_parents=(${@:3})
     local cmdnames=(add activate distro rm show cd list path clean help)
     local -a ros_distros=(
         ardent
@@ -225,7 +225,14 @@ rosws_add()
     elif [[ ${rosws_workspaces[$ws_name]} == "" ]] || [ ! -z "$rosws_force_mode" ]
     then
         rosws_remove "$ws_name" > /dev/null
-        printf "%q:%s:%s\n" "${ws_name}" "${distro}" "${PWD/#$HOME/~}" >> "$ROSWS_CONFIG"
+        # Build string of parent workspaces
+        local parents_str=""
+        for parent_ws in $ws_parents
+        do
+            # Get te absolute path of each parent workspace and escape home for clarity
+            parents_str+=":${$(readlink -f "$parent_ws")/#$HOME/~}"
+        done
+        printf "%q:%s%s:%s\n" "${ws_name}" "${distro}" "${parents_str}" "${PWD/#$HOME/~}" >> "$ROSWS_CONFIG"
         if (whence sort >/dev/null); then
             local config_tmp=$(mktemp "${TMPDIR:-/tmp}/rosws.XXXXXXXXXX")
             # use 'cat' below to ensure we respect $ROSWS_CONFIG as a symlink
@@ -326,10 +333,11 @@ rosws_show()
             rosws_print_msg "$ROSWS_BLUE" "No workspace named $ws_name"
         else
             # Build print line depending on parent workspaces and current activation
-            local parents_str=""
-            for parent_ws in $ws_parents
+            local parents_str="\n"
+            [[ ${#ws_parents} == 0 ]] && parents_str="None"
+            for ((i = 1; i <= $#ws_parents; i++))
             do
-                parents_str+="--> $parent_ws "
+                parents_str+="    $i. $ws_parents[$i]\n"
             done
             local active_str=""
             if [[ $ws_name == $ROSWS_ACTIVE_WS ]]
@@ -337,7 +345,10 @@ rosws_show()
                 active_str="${ROSWS_GREEN}(active)${ROSWS_NOC}"
             fi
             # Show info for this ws
-            rosws_print_msg "$ROSWS_GREEN" "Workspace: ${ROSWS_GREEN}$ws_name${ROSWS_NOC} -- [$ws_distro] $parents_str--> $ws_path $active_str"
+            rosws_print_msg "$ROSWS_BLUE" "Workspace: ${ROSWS_BLUE}$ws_name${ROSWS_NOC} $active_str"
+            rosws_print_msg "$ROSWS_NOC" "Path: $ws_path"
+            rosws_print_msg "$ROSWS_NOC" "Distro: ${ROSWS_BLUE}$ws_distro${ROSWS_NOC}"
+            rosws_print_msg "$ROSWS_NOC" "Parent workspaces: $parents_str"
         fi
     else
         rosws_exit_fail "You must enter a workspace"
@@ -426,10 +437,10 @@ local ROSWS_DEBUG=0
 # the actual command parsing won't be affected.
 
 zparseopts -D -E \
-    q=rosws_quiet_mode -quiet=rosws_quiet_mode \
-    v=rosws_print_version -version=rosws_print_version \
-    d=rosws_debug_mode -debug=rosws_debug_mode \
-    f=rosws_force_mode -force=rosws_force_mode
+    {q,-quiet}=rosws_quiet_mode \
+    {v,-version}=rosws_print_version \
+    {d,-debug}=rosws_debug_mode \
+    {f,-force}=rosws_force_mode
 
 if [[ ! -z $rosws_print_version ]]
 then
@@ -482,7 +493,8 @@ else
         case "$rosws_o"
             in
             "-a"|"--add"|"add")
-                rosws_add "$2" "$3"
+                rosws_add "${@:2}"
+                # rosws_add "$2" "$3"
                 break
                 ;;
             "--activate"|"activate")
@@ -555,6 +567,7 @@ unset rosws_extglob_is_set
 unset rosws_quiet_mode
 unset rosws_force_mode
 unset rosws_print_version
+unset rosws_parent_ws_paths
 unset rosws_o
 unset ws_distro
 unset ws_path

@@ -41,7 +41,6 @@ function _rosws() {
     rosws_workspaces[$ws_name]=$ws_path
   done < $ROSWS_CONFIG
 
-  # TODO: Update help test for add command to include usage of parent workspaces
   commands=(
     'activate:Set the given workspace as the active one'
     'distro:Set and source the given ROS 2 distro (humble, iron, rolling, etc.)'
@@ -55,11 +54,12 @@ function _rosws() {
     'help:Show this extremely helpful text'
   )
 
-  # TODO: Define how to handle new list of parent_ws arguments
   _arguments -C \
     '1: :->first_arg' \
     '2: :->second_arg' \
-    '3: :->third_arg' && ret=0
+    '3: :->third_arg' \
+    '*: :->rem_args' \
+  && ret=0
 
   local command=$words[2]
   local ws_name=$words[3]
@@ -108,6 +108,12 @@ function _rosws() {
           ;;
       esac
       ;;
+    rem_args)
+      case $command in
+        add)
+          _path_files -/ && ret=0
+      ;;
+      esac
   esac
 
   return $ret
