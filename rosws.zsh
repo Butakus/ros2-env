@@ -7,7 +7,7 @@
 
 
 # version
-readonly ROSWS_VERSION=0.1.0
+readonly ROSWS_VERSION=0.2.0
 
 # colors
 readonly ROSWS_BLUE="\033[96m"
