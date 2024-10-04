@@ -8,14 +8,14 @@ Over the years working with ROS 1 and 2, I have seen (and created) multiple solu
 
 The `ros2-env` plugin allows you to define a list of workspaces, and to assign a name to each one of them. Then you can "activate" one of the workspaces, sourcing it and making it the target for the colcon utility functions that are also provided by this plugin.
 
-**Note:** Right now only one workspace can be active at the same time. If you require multiple "chained" workspaces sourced, feel free to reach out. Issues and PRs are welcome!
+It is also possible to select a base ROS 2 distro (rolling, jazzzy, etc.) for each workspace, as well as a list of parent workspaces to [overlay on top of them](https://colcon.readthedocs.io/en/released/user/using-multiple-workspaces.html). You can find more info and some examples below.
 
 The active workspace is stored in the environment variable `$ROSWS_ACTIVE_WS`, which can be changed with the `rosws` command described below.
 
 ## Disclaimer
 This workspace management part of the `ros2-env` plugin is heavily inspired by [wd](https://github.com/mfaerevaag/wd). Most of the functions, completions and even the tests have been extracted from this repository. Check it out if you still don't know about that amazing plugin!
 
-## Installation
+# Installation
 
 ### Install for Oh-My-Zsh (recomended)
 
@@ -50,7 +50,8 @@ Then, in your .zshrc, add the following line:
 source ${ZDOTDIR:-~}/.zplugins/ros2-env/ros2-env.plugin.zsh
 ```
 
-## Colcon build utility
+
+# Colcon build utility
 
 Build the active workspace with the `cb` (colcon build) command. No matter where you are.
 
@@ -95,12 +96,14 @@ colcon_clean foo
 colcon_clean bar
 ```
 
-## Workspace management
+This command is simmilar to `colcon clean` plugin, except you don't need to cd to the workspace's root dir. On the other hand, it is not possible to clean specific packages (the whole workspace is cleaned).
+
+# Workspace management
 Similar to `wd`, this plugin provides a `rosws` command that allows you to change the active workspace, and to manage the list of registered workspaces. Only one workspace can be active at the same time.
 
-### Usage (`rosws`)
+## Usage (`rosws`)
 
-* Add current working directory to list of workspaces:
+### Add current working directory to list of workspaces:
 
 ```zsh
 rosws add foo
@@ -112,38 +115,52 @@ If a workspace with the same name exists, use `rosws add foo --force` to overwri
 
 You can omit the workspace name to automatically use the current directory's name instead.
 
-* You can make `foo` the active workspace with:
+### Add a new workspace under a specific ROS 2 distro:
+
+```zsh
+rosws add foo rolling
+```
+
+This will configure workspace `foo` with ROS 2 rolling as the base. When building and sourcing the `foo` workspace, the base environment from `/opt/ros/<distro>/setup.zsh` will be sourced first.
+
+**Note:** By default, the `rosws add` command will link the new workspace with whatever environment is set in the `$ROS_DISTRO` environment variable.
+
+### Make `foo` the active workspace:
 
 ```zsh
 rosws foo
+# or
+rosws activate foo
 ```
 
-* Remove workspace:
+### Remove workspace:
 
 ```zsh
 rosws rm foo
 ```
 
 
-* List all registered workspaces (stored in `~/.config/ros2-env/workspaces` by default):
+### List all registered workspaces:
 
 ```zsh
 rosws list
 ```
 
-* Show information of given workspace:
+Workspaces are stored in `~/.config/ros2-env/workspaces` by default.
+
+### Show information of given workspace:
 
 ```zsh
 rosws show foo
 ```
 
-* Show path (pwd) of given workspace:
+### Show path (pwd) of given workspace:
 
 ```zsh
 rosws path foo
 ```
 
-* Remove workspaces pointing to non-existent directories.
+### Remove workspaces pointing to non-existent directories.
 
 ```zsh
 rosws clean
@@ -152,7 +169,9 @@ rosws clean
 Use `rosws clean --force` to not be prompted with confirmation.
 
 
-* Change directory to the workspace. You can also cd to any directory inside the workspace, with autocompletion.
+### Change directory to the workspace:
+
+You can also cd to any directory inside the workspace, with autocompletion.
 
 ```zsh
 rosws cd foo
@@ -163,7 +182,7 @@ rosws cd foo src/awesome_package
 Using `rosws cd` without any additional argument will cd into the current active workspace.
 
 
-Print usage info:
+### Print usage info:
 
 ```zsh
 rosws help
@@ -171,17 +190,17 @@ rosws help
 
 The usage will be printed also if you call `rosws` with no command
 
-* Print the running version of `rosws`:
+### Print the running version of `rosws`:
 
 ```zsh
 rosws --version
 ```
 
-## Configuration
+# Configuration
 
 The configuration file where workspaces are registered is stored by default in `~/.config/ros2-env/workspaces`. It is possible to modify this by setting the environment variable `$ROSWS_CONFIG`.
 
-### Colcon parameters
+## Colcon parameters
 It is also possible to control the arguments passed to colcon when using the `cb` command, by setting the `$CB_EXTRA_ARGS` environment variable. For example:
 
 ```zsh
@@ -192,7 +211,7 @@ By default, this variable only includes the `--symlink-install` option.
 
 **Note:** In the future, `cb` will allow adding extra arguments that will be passed to colcon, to avoid setting the environment variable.
 
-### ROS 2 distro
+## ROS 2 distro
 
 It is possible to select a different distro (rolling, jazzy, etc.) when adding a new workspace. By default, the value stored in `$ROS_DISTRO` is used. Example:
 
@@ -210,3 +229,18 @@ rosws distro <distro>
 ```
 
 This will source the environment in `/opt/ros/<distro>/setup.zsh`, also setting the `$ROS_DISTRO` variable.
+
+## Chained workspaces
+When adding a new workspace, in addition to setting the base ROS 2 distro, it is also possible to set a list of parent workspaces (or underlay workspaces), that will be sourced before the overlay.
+
+To do this, just pass the paths of the parent workspaces (in order) after the ROS distro. Example:
+
+```zsh
+rosws add foo rolling ~/ros2/base_ws ~/ros2/sim_ws
+```
+
+This will set "base_ws" and "sim_ws" as underlays of the newly created `foo` workspace. When activating (sourcing) or building `foo` with `cb`, the underlays will be sourced first in the following order:
+
+```
+rolling --> base_ws --> sim_ws --> foo
+```
