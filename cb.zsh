@@ -66,11 +66,11 @@ then
         else
             parse_ws_data $ROSWS_ACTIVE_WS
             # First source the base ROS distro environment
-            source /opt/ros/$ws_distro/setup.zsh
+            source "/opt/ros/${ws_distro}/setup.zsh"
             # Source all parent workspaces, if any
             for parent in $ws_parents
             do
-                source $parent/install/local_setup.zsh
+                source "${parent/#\~/$HOME}/install/local_setup.zsh"
             done
             # Build and source the final workspace
             _colcon_build_path ${ws_path/#\~/$HOME}
@@ -88,11 +88,11 @@ else
         # TODO: Clear environment variables when switching to a different workspace
         parse_ws_data $ws_name
         # First source the base ROS distro environment
-        source /opt/ros/$ws_distro/setup.zsh
+        source "/opt/ros/${ws_distro}/setup.zsh"
         # Source all parent workspaces, if any
         for parent in $ws_parents
         do
-            source $parent/install/local_setup.zsh
+            source "${parent/#\~/$HOME}/install/local_setup.zsh"
         done
         # Build and source the final workspace
         _colcon_build_path ${ws_path/#\~/$HOME}

@@ -139,11 +139,11 @@ activate_ws()
 
     parse_ws_data $ws_name
     # First source the base ROS distro environment
-    source /opt/ros/$ws_distro/setup.zsh
+    source "/opt/ros/${ws_distro}/setup.zsh"
     # Source all parent workspaces, if any
     for parent in $ws_parents
     do
-        source $parent/install/local_setup.zsh
+        source "${parent/#\~/$HOME}/install/local_setup.zsh"
     done
     # Source active workspace
     source "${ws_path/#\~/$HOME}/install/local_setup.zsh"
