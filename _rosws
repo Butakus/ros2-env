@@ -33,7 +33,7 @@ function _rosws() {
     local arr=(${(s,:,)line})
     ws_name=${arr[1]}
     ws_distro=${arr[2]}
-    ws_path=${arr[3]}
+    ws_path=${arr[-1]}
 
     # replace ~ from path to fix completion (#17)
     ws_path=${ws_path/#\~/$HOME}
