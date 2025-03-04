@@ -29,7 +29,6 @@ parse_ws_data()
     return 1
 }
 
-# TODO: Allow cb command to receive extra args and pass them to colcon.
 function _colcon_build_path()
 {
     if [ -z "$1" ]
@@ -40,7 +39,7 @@ function _colcon_build_path()
     p=$(pwd)
     cd "$1"
     shift
-    # colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+    # Add arguments defined in CB_EXTRA_ARGS and the ones passed to cb
     colcon build $CB_EXTRA_ARGS "$@"
     cd $p
 }

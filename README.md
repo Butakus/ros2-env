@@ -200,16 +200,25 @@ rosws --version
 
 The configuration file where workspaces are registered is stored by default in `~/.config/ros2-env/workspaces`. It is possible to modify this by setting the environment variable `$ROSWS_CONFIG`.
 
-## Colcon parameters
+## Colcon arguments
 It is also possible to control the arguments passed to colcon when using the `cb` command, by setting the `$CB_EXTRA_ARGS` environment variable. For example:
 
 ```zsh
-export CB_EXTRA_ARGS="--symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release"
+export CB_EXTRA_ARGS="--symlink-install"
 ```
 
 By default, this variable only includes the `--symlink-install` option.
 
-**Note:** In the future, `cb` will allow adding extra arguments that will be passed to colcon, to avoid setting the environment variable.
+In addition, `cb` also allows passing extra arguments to colcon, that will be added after those in the environment variable. All the remainder arguments in the `cb` command will be forwarded. Example:
+
+```zsh
+# Pass custom cmake args (--symlink-install is already by included in $CB_EXTRA_ARGS)
+cb foo --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+# If the workspace is already active...
+cb --cmake-args -DCMAKE_BUILD_TYPE=Release
+```
+
 
 ## ROS 2 distro
 
