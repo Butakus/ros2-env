@@ -9,7 +9,6 @@ function _cb() {
   local ret=1
 
   local -a workspaces_list
-
   workspaces_list=( ${(f)"$(< $ROSWS_CONFIG)"} )
   # Format output to be a bit prettier
   for ((i = 1; i <= $#workspaces_list; i++))
@@ -17,13 +16,79 @@ function _cb() {
     workspaces_list[$i]=$(sed 's/:/ --> /2g' <<<"$workspaces_list[$i]")
   done
 
-  _arguments -C \
-    '1: :->first_arg' && ret=0
+  typeset -A rosws_workspaces
+  while read -r line
+  do
+    local arr=(${(s,:,)line})
+    ws_name=${arr[1]}
+    ws_distro=${arr[2]}
+    ws_path=${arr[-1]}
 
-  local target=$words[1]
+    # replace ~ from path to fix completion (#17)
+    ws_path=${ws_path/#\~/$HOME}
+
+    rosws_workspaces[$ws_name]=$ws_path
+  done < $ROSWS_CONFIG
+
+  _arguments -C \
+    '1: :->first_arg' \
+    '*: :->rem_args' \
+  && ret=0
+
+  local ws_name=$words[2]
+  local colcon_args
+  # Variable to store the length difference between "colcon build ..." and our "cb ..." command
+  # This will be needed to update the cursor position when calling colcon argcomplete
+  local cursor_point_diff
+  # If the first word is not a workspace name, change state to rem_args to process colcon args
+  if [[ ${words[2]} == --* ]]
+  then
+    state="rem_args"
+    ws_name=$ROSWS_ACTIVE_WS
+    colcon_args=(${words[@]:1})
+    cursor_point_diff=10  # "colcon build" - "cb" -> 10 characters
+  else
+    colcon_args=(${words[@]:2})
+    cursor_point_diff=$((12 - ${#words[2]} - 3))
+  fi
+
   if [[ $state == first_arg ]]
   then
+    # The first argument is the workspace to build
     _describe -t workspaces_list "Workspaces" workspaces_list && ret=0
+  else
+    # The remainder arguments will go to colcon
+    # Command to test colcon argcomplete in the terminal
+    # IFS=$'\013' COMP_LINE="colcon build --sym " COMP_POINT=${#COMP_LINE} _ARGCOMPLETE_SHELL="zsh" _ARGCOMPLETE_SUPPRESS_SPACE=1 _ARGCOMPLETE=1 colcon 8>&1 9>&2 1>&9 2>&1
+
+    # Create a fake line buffer so argcomplete thinks we are executing this command
+    local fake_buffer="colcon build ${colcon_args[@]}"
+    # In order to pass the correct cursor position, we need to determine
+    # the difference between "colcon build ..." and "cb $ws_name ..."
+    local fake_cursor_point=$((CURSOR + cursor_point_diff))
+
+    # cd into the directory when running colcon completion to find packages and etc.
+    local ws_path
+    if [[ -v rosws_workspaces[$ws_name] ]]; then
+      ws_path=$rosws_workspaces[$ws_name]
+    fi
+
+    # Normal mode: 8>&1 9>&2 1>/dev/null 2>&1
+    # Debug mode: 8>&1 9>&2 1>&9 2>&1
+    completions=($(cd $ws_path && \
+        IFS=$'\013' \
+        COMP_LINE="$fake_buffer" \
+        COMP_POINT="$fake_cursor_point" \
+        _ARGCOMPLETE_SHELL="zsh" \
+        _ARGCOMPLETE=1 \
+        _ARGCOMPLETE_SUPPRESS_SPACE=1 \
+        colcon 8>&1 9>&2 1>/dev/null 2>&1
+      )
+    )
+    # completions come in a single string. Split it by the 0x0b char (13 in decimal)
+    completions_list=(${(ps/\013/)completions})
+
+    _describe "Colcon arguments" completions_list -o nosort && ret=0
   fi
 
   return $ret
