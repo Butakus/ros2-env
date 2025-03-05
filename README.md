@@ -13,7 +13,7 @@ It is also possible to select a base ROS 2 distro (rolling, jazzzy, etc.) for ea
 The active workspace is stored in the environment variable `$ROSWS_ACTIVE_WS`, which can be changed with the `rosws` command described below.
 
 ## Disclaimer
-This workspace management part of the `ros2-env` plugin is heavily inspired by [wd](https://github.com/mfaerevaag/wd). Most of the functions, completions and even the tests have been extracted from this repository. Check it out if you still don't know about that amazing plugin!
+This workspace management part of the `ros2-env` plugin is heavily inspired by [wd](https://github.com/mfaerevaag/wd). Most of the functions and completions have been extracted from this repository. Check it out if you still don't know about that amazing plugin!
 
 # Installation
 
