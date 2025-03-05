@@ -11,8 +11,14 @@ function _rosws() {
   local ROSWS_CONFIG=${ROSWS_CONFIG:-$HOME/.config/ros2-env/workspaces}
   local ret=1
 
-  local -a commands
-  local -a workspaces_list=( "${(f)mapfile[$ROSWS_CONFIG]//$HOME/~}" )
+    local -a workspaces_list
+  workspaces_list=( ${(f)"$(< $ROSWS_CONFIG)"} )
+  # Format output to be a bit prettier
+  for ((i = 1; i <= $#workspaces_list; i++))
+  do
+    workspaces_list[$i]=$(sed 's/:/ --> /2g' <<<"$workspaces_list[$i]")
+  done
+
   local -a ros_distros=(
     ardent
     bouncy
@@ -41,7 +47,7 @@ function _rosws() {
     rosws_workspaces[$ws_name]=$ws_path
   done < $ROSWS_CONFIG
 
-  commands=(
+  local -a commands=(
     'activate:Set the given workspace as the active one'
     'distro:Set and source the given ROS 2 distro (humble, iron, rolling, etc.)'
     'add:Adds the current working directory to your registered workspaces'

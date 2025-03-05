@@ -29,7 +29,6 @@ parse_ws_data()
     return 1
 }
 
-# TODO: Allow cb command to receive extra args and pass them to colcon.
 function _colcon_build_path()
 {
     if [ -z "$1" ]
@@ -39,8 +38,9 @@ function _colcon_build_path()
     fi
     p=$(pwd)
     cd "$1"
-    # colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
-    colcon build $CB_EXTRA_ARGS
+    shift
+    # Add arguments defined in CB_EXTRA_ARGS and the ones passed to cb
+    colcon build $CB_EXTRA_ARGS "$@"
     cd $p
 }
 
@@ -53,7 +53,20 @@ source ${0:A:h}/load_workspaces.zsh
 load_workspaces
 
 # If no arguments, build the active workspace
-local ws_name=$1
+local ws_name
+local colcon_args=()
+
+# Separate workspace argument and colcon arguments
+# Check if the first argument is a colcon argument or workspace name
+if [[ "$1" == --* ]]; then
+    colcon_args=("$@")
+else
+    ws_name="$1"
+    shift
+    colcon_args=("$@")
+fi
+
+# If no arguments, build the active workspace
 if [ -z "$ws_name" ]
 then
     if [[ -v ROSWS_ACTIVE_WS ]]
@@ -73,7 +86,7 @@ then
                 source "${parent/#\~/$HOME}/install/local_setup.zsh"
             done
             # Build and source the final workspace
-            _colcon_build_path ${ws_path/#\~/$HOME}
+            _colcon_build_path ${ws_path/#\~/$HOME} "${colcon_args[@]}"
             source "${ws_path/#\~/$HOME}/install/local_setup.zsh"
         fi
     else
@@ -95,7 +108,7 @@ else
             source "${parent/#\~/$HOME}/install/local_setup.zsh"
         done
         # Build and source the final workspace
-        _colcon_build_path ${ws_path/#\~/$HOME}
+        _colcon_build_path ${ws_path/#\~/$HOME} "${colcon_args[@]}"
         source "${ws_path/#\~/$HOME}/install/local_setup.zsh"
         # Now this will be the active workspace
         export ROSWS_ACTIVE_WS=$ws_name
