@@ -4,6 +4,23 @@
 #
 # Repo URL: github.com/butakus/ros2-env
 
+parse_ws_data()
+{
+    local ws_name=$1
+    if [[ ${rosws_workspaces[$ws_name]} != "" ]]
+    then
+        # Split the ws data to extract distro and ws paths
+        local rosws_data=(${(s,:,)rosws_workspaces[$ws_name]})
+        ws_distro=${rosws_data[1]}
+        ws_path=${rosws_data[-1]/#\~/$HOME}
+        # List of paths for parent workspaces to be sourced in cascade
+        ws_parents=(${rosws_data[2,-2]})
+        return 0
+    fi
+    # Return error if ws_name is not in the list
+    return 1
+}
+
 # load workspaces
 # Handle $0 according to the standard:
 # https://zdharma-continuum.github.io/Zsh-100-Commits-Club/Zsh-Plugin-Standard.html
@@ -12,8 +29,9 @@
 source ${0:A:h}/load_workspaces.zsh
 load_workspaces
 
+local ws_name="$1"
 # If no arguments, clean the active workspace
-if [ -z "$1" ]
+if [ -z "$ws_name" ]
 then
     if [[ -v ROSWS_ACTIVE_WS ]]
     then
@@ -24,19 +42,20 @@ then
             echo "Please check your configuration and/or re-activate the workspace."
         else
             # Clean active workspace
-            ws_path=${rosws_workspaces[$ROSWS_ACTIVE_WS]/#\~/$HOME}
-            rm -rf $ws_path/build/* $ws_path/install/* $ws_path/log/*
+            parse_ws_data $ROSWS_ACTIVE_WS
+            # ws_path=${rosws_workspaces[$ROSWS_ACTIVE_WS]/#\~/$HOME}
+            rm -rf $ws_path/build $ws_path/install $ws_path/log
         fi
     else
         echo "There is no active workspace. Use rosws <workspace> to activate a workspace"
     fi
 else
     # Custom workspace selected. Clean it
-    if [[ -z $rosws_workspaces[$1] ]]
+    if [[ -z $rosws_workspaces[$ws_name] ]]
     then
         echo "Please enter a valid workspace. Use rosws list to see the list of registered workspaces."
     else
-        ws_path=${rosws_workspaces[$1]/#\~/$HOME}
-        rm -rf $ws_path/build/* $ws_path/install/* $ws_path/log/*
+        parse_ws_data $ws_name
+        rm -rf $ws_path/build $ws_path/install $ws_path/log
     fi
 fi

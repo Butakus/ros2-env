@@ -58,12 +58,14 @@ local colcon_args=()
 
 # Separate workspace argument and colcon arguments
 # Check if the first argument is a colcon argument or workspace name
-if [[ "$1" == --* ]]; then
-    colcon_args=("$@")
-else
-    ws_name="$1"
-    shift
-    colcon_args=("$@")
+if [[ -v "$1" ]]; then
+    if [[ "$1" == --* ]]; then
+        colcon_args=("$@")
+    else
+        ws_name="$1"
+        shift
+        colcon_args=("$@")
+    fi
 fi
 
 # If no arguments, build the active workspace
