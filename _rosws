@@ -33,6 +33,12 @@ function _rosws() {
     rolling
   )
 
+  local -a ros_dds_vendors=(
+    fastdds
+    cyclonedds
+    zenoh
+  )
+
   typeset -A rosws_workspaces
   while read -r line
   do
@@ -51,6 +57,7 @@ function _rosws() {
     'activate:Set the given workspace as the active one'
     'distro:Set and source the given ROS 2 distro (humble, iron, rolling, etc.)'
     'domain:Set and source the given ROS DOMAIN ID'
+    'dds:Set and source the given ROS 2 DDS vendor (fastdds, cyclonedds, zenoh'
     'add:Adds the current working directory to your registered workspaces'
     'rm:Removes the given workspace'
     'list:Print all registered workspaces'
@@ -92,6 +99,9 @@ function _rosws() {
           ;;
         domain)
           _message 'Write the ROS DOMAIN ID beetween 0 and 250' && ret=0
+          ;;
+        dds)
+          _describe -t ros_dds_vendors "ROS 2 DDS Vendors" ros_dds_vendors && ret=0
           ;;
         show)
           _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0

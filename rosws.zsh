@@ -177,12 +177,26 @@ rosws_domain()
     fi
 }
 
+rosws_dds()
+{
+    local dds=$1
+    if [[ $dds =~ ^(fastdds|cyclonedds|zenoh)$ ]]; then
+        case $dds in
+            fastdds)    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp ;;
+            cyclonedds) export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp ;;
+            zenoh)   export RMW_IMPLEMENTATION=rmw_zenoh_cpp ;;
+        esac
+    else
+        rosws_exit_fail "Wrong ROS DDS vendor, must be one of: fastdds, cyclonedds, zenoh"
+    fi
+}
+
 rosws_add()
 {
     local ws_name=$1
     local distro=$2
     local ws_parents=(${@:3})
-    local cmdnames=(add activate distro rm show cd list path clean help)
+    local cmdnames=(add activate distro domain dds rm show cd list path clean help)
     local -a ros_distros=(
         ardent
         bouncy
@@ -518,6 +532,10 @@ else
                 ;;
             "--domain"|"domain")
                 rosws_domain "$2"
+                break
+                ;;
+            "--dds"|"dds")
+                rosws_dds "$2"
                 break
                 ;;
             "-r"|"--remove"|"rm")
