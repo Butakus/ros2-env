@@ -166,6 +166,17 @@ rosws_distro()
     source /opt/ros/$1/setup.zsh || rosws_exit_fail "ROS distro '${1}' is not installed"
 }
 
+rosws_domain()
+{
+    local domain=$1
+    if [[ $domain =~ ^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|250)$ ]]
+    then
+        export ROS_DOMAIN_ID=$domain
+    else
+        rosws_exit_fail "ROS DOMAIN ID must be a number between 0 and 250"
+    fi
+}
+
 rosws_add()
 {
     local ws_name=$1
@@ -503,6 +514,10 @@ else
                 ;;
             "--distro"|"distro")
                 rosws_distro "$2"
+                break
+                ;;
+            "--domain"|"domain")
+                rosws_domain "$2"
                 break
                 ;;
             "-r"|"--remove"|"rm")

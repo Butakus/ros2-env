@@ -50,6 +50,7 @@ function _rosws() {
   local -a commands=(
     'activate:Set the given workspace as the active one'
     'distro:Set and source the given ROS 2 distro (humble, iron, rolling, etc.)'
+    'domain:Set and source the given ROS DOMAIN ID'
     'add:Adds the current working directory to your registered workspaces'
     'rm:Removes the given workspace'
     'list:Print all registered workspaces'
@@ -88,6 +89,9 @@ function _rosws() {
           ;;
         distro)
           _describe -t ros_distros "ROS 2 Distros" ros_distros && ret=0
+          ;;
+        domain)
+          _message 'Write the ROS DOMAIN ID beetween 0 and 250' && ret=0
           ;;
         show)
           _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
