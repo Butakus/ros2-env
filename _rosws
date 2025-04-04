@@ -56,6 +56,7 @@ function _rosws() {
 
   local -a commands=(
     'activate:Set the given workspace as the active one'
+    'default:Set/Unset the default workspace'
     'distro:Set and source the given ROS 2 distro (humble, iron, rolling, etc.)'
     'domain:Set and source the given ROS DOMAIN ID'
     'rmw:Set and source the given ROS 2 RMW vendor (rmw_fastrtps_cpp, rmw_cyclonedds_cpp, rmw_zenoh_cpp, etc.)'
@@ -67,6 +68,11 @@ function _rosws() {
     'clean:Remove workspaces pointing to non-existent directories (will prompt unless --force is used)'
     'cd:Change directory to the workspace. You can also cd to a dir inside the workspace'
     'help:Show this extremely helpful text'
+  )
+
+  local -a default_subcommands=(
+    'set:Set the default workspace'
+    'unset:Unset the default workspace'
   )
 
   _arguments -C \
@@ -95,6 +101,10 @@ function _rosws() {
         activate)
           _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
           ;;
+        default)
+          _describe -t workspaces_list "Workspaces" workspaces_list && ret=0
+          _describe -t default_subcommands "Default workspace subcommands" default_subcommands && ret=0
+          ;;
         distro)
           _describe -t ros_distros "ROS 2 Distros" ros_distros && ret=0
           ;;
@@ -119,6 +129,13 @@ function _rosws() {
       case $command in
         add)
           _describe -t ros_distros "ROS 2 Distros" ros_distros && ret=0
+          ;;
+        default)
+          # Only describe workspaes if subcommand is "set"
+          if [[ $words[3] == "set" ]]
+          then
+            _describe -t rosws_workspaces "Workspaces" workspaces_list && ret=0
+          fi
           ;;
         cd)
           # Autocomplete directories with cd command if workspace is valid

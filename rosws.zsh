@@ -76,19 +76,22 @@ Usage: rosws [command] [workspace]
 Commands:
     <workspace>               Set the given workspace as the active one
     activate <workspace>      Set the given workspace as the active one
-    distro <distro>           Set and source the given ROS 2 distro (humble, iron, rolling, etc.)
-    domain <domain>           Set the ROS 2 domain ID (0-250)
-    rmw <rmw_implementation>  Set the RMW implementation (rmw_fastrtps_cpp, rmw_cyclonedds_cpp, etc.)
     add <workspace>           Adds the current working directory to your registered workspaces
     add                       Adds a new workspace with current directory's name
     add <workspace> <distro>  Adds a new workspace using a specific ROS distro
     add <workspace> <distro> [<parent dirs>]  Adds a new workspace using a specific ROS distro and a list of parent workspaces
-    rm <workspace>            Removes the given workspace
-    list                      Print all registered workspaces
-    show <workspace>          Print info of given workspace (name and path)
-    path <workspace>          Show the path to given workspace (pwd)
-    clean                     Remove workspaces pointing to non-existent directories (will prompt unless --force is used)
     cd <workspace> [<dir>]    Change directory to the workspace. You can also cd to a dir inside the workspace.
+    clean                     Remove workspaces pointing to non-existent directories (will prompt unless --force is used)
+    default                   Print the default workspace
+    default set <workspace>   Set the default workspace. It will be activated automatically on every new shell.
+    default unset             Unset the default workspace.
+    distro <distro>           Set and source the given ROS 2 distro (humble, iron, rolling, etc.)
+    domain <domain>           Set the ROS 2 domain ID (0-250)
+    list                      Print all registered workspaces
+    path <workspace>          Show the path to given workspace (pwd)
+    rm <workspace>            Removes the given workspace
+    rmw <rmw_implementation>  Set the RMW implementation (rmw_fastrtps_cpp, rmw_cyclonedds_cpp, etc.)
+    show <workspace>          Print info of given workspace (name and path)
 
     -v | --version  Print version
     -d | --debug    Exit after execution with exit codes (for testing)
@@ -163,6 +166,62 @@ rosws_activate()
     fi
 }
 
+rosws_default()
+{
+    # The first argument may be empty, a ws_name, or the verbs 'set' and 'unset'
+    # If empty, return the current default workspace from _ROSWS_CONFIG_DEFAULT
+    # If 'set', set the default workspace to the value of $2
+    # If 'unset', remove the default workspace from _ROSWS_CONFIG_DEFAULT
+    # If a ws_name, set the default workspace to the value of $1
+    if [[ $1 == "" ]]
+    then
+        if [[ -e $_ROSWS_CONFIG_DEFAULT ]]
+        then
+            local default_ws=$(cat $_ROSWS_CONFIG_DEFAULT)
+            if [[ $default_ws != "" ]]
+            then
+                echo "Default workspace:"
+                (rosws show $default_ws)
+            else
+                echo "No default workspace set"
+            fi
+        else
+            echo "No default workspace set"
+        fi
+    elif [[ $1 == "set" ]]
+    then
+        if [[ -z $2 ]]
+        then
+            rosws_exit_fail "You must enter a workspace name to set as default"
+        else
+            # Check if the workspace is in the list of workspaces
+            if [[ -z $rosws_workspaces[$2] ]]
+            then
+                rosws_exit_fail "Workspace '$2' is not in the list of workspaces"
+                return
+            else
+                echo "$2" >| $_ROSWS_CONFIG_DEFAULT
+                rosws_print_msg "$ROSWS_GREEN" "Default workspace set to '$2'"
+            fi
+        fi
+    elif [[ $1 == "unset" ]]
+    then
+        # Clear the file contents
+        echo "" >| $_ROSWS_CONFIG_DEFAULT
+        rosws_print_msg "$ROSWS_GREEN" "Default workspace unset"
+    else
+        # Check if the workspace is in the list of workspaces
+        if [[ -z $rosws_workspaces[$1] ]]
+        then
+            rosws_exit_fail "Workspace '$1' is not in the list of workspaces"
+            return
+        else
+            echo "$1" >| $_ROSWS_CONFIG_DEFAULT
+            rosws_print_msg "$ROSWS_GREEN" "Default workspace set to '$1'"
+        fi
+    fi
+}
+
 rosws_distro()
 {
     source /opt/ros/$1/setup.zsh || rosws_exit_fail "ROS distro '${1}' is not installed"
@@ -189,7 +248,7 @@ rosws_add()
     local ws_name=$1
     local distro=$2
     local ws_parents=(${@:3})
-    local cmdnames=(add activate distro domain rmw rm show cd list path clean help)
+    local cmdnames=(add activate default set distro domain rmw rm show cd list path clean help)
     local -a ros_distros=(
         ardent
         bouncy
@@ -351,11 +410,11 @@ rosws_show()
             rosws_print_msg "$ROSWS_BLUE" "No workspace named $ws_name"
         else
             # Build print line depending on parent workspaces and current activation
-            local parents_str="\n"
-            [[ ${#ws_parents} == 0 ]] && parents_str="None"
+            local parents_str=""
+            [[ ${#ws_parents} == 0 ]] && parents_str="\n    None"
             for ((i = 1; i <= $#ws_parents; i++))
             do
-                parents_str+="    $i. $ws_parents[$i]\n"
+                parents_str+="\n    $i. $ws_parents[$i]"
             done
             local active_str=""
             if [[ $ws_name == $ROSWS_ACTIVE_WS ]]
@@ -447,6 +506,7 @@ rosws_cd()
 
 local ROSWS_CONFIG=${ROSWS_CONFIG:-$HOME/.config/ros2-env}
 local _ROSWS_CONFIG_WS=$ROSWS_CONFIG/workspaces
+local _ROSWS_CONFIG_DEFAULT=$ROSWS_CONFIG/default_ws
 local ROSWS_QUIET=0
 local ROSWS_EXIT_CODE=0
 local ROSWS_DEBUG=0
@@ -490,7 +550,7 @@ source ${0:A:h}/load_workspaces.zsh
 load_workspaces
 
 # get opts
-args=$(getopt -o a:r:c:lhs -l add:,activate:,distro:,rm:,clean,list,path:,help,show -- $*)
+args=$(getopt -o a:r:c:lhs -l add:,activate:,default:,distro:,rm:,clean,list,path:,help,show -- $*)
 
 # check if no arguments were given, and that version is not set
 if [[ ($? -ne 0 || $#* -eq 0) && -z $rosws_print_version ]]
@@ -518,6 +578,10 @@ else
                 ;;
             "--activate"|"activate")
                 rosws_activate "$2"
+                break
+                ;;
+            "--default"|"default")
+                rosws_default "${@:2}"
                 break
                 ;;
             "--distro"|"distro")
