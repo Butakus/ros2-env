@@ -181,6 +181,24 @@ rosws cd foo src/awesome_package
 
 Using `rosws cd` without any additional argument will cd into the current active workspace.
 
+### Setting a default workspace:
+Sometimes it may be useful to set a default workspace to be automatically loaded when starting a new shell. This is specially true if you are working on a project and want to open many new terminals without having to manually activate the workspace on each one:
+
+```zsh
+# Set foo as default workspace
+rosws default set foo
+# Or
+rosws default foo
+```
+
+Use `rosws default unset` to clear the default workspace and disable the automatic source:
+```zsh
+# Unset (clear) the default workspace
+rosws default unset
+```
+
+The current default can be displayed by just using `rosws default`. The configuration with the default workspace name is stored in `$ROSWS_CONFIG/default_ws`.
+
 
 ### Print usage info:
 
