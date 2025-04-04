@@ -78,7 +78,7 @@ Commands:
     activate <workspace>      Set the given workspace as the active one
     distro <distro>           Set and source the given ROS 2 distro (humble, iron, rolling, etc.)
     domain <domain>           Set the ROS 2 domain ID (0-250)
-    dds <rmw_implementation>  Set the DDS implementation (rmw_fastrtps_cpp, rmw_cyclonedds_cpp, etc.)
+    rmw <rmw_implementation>  Set the RMW implementation (rmw_fastrtps_cpp, rmw_cyclonedds_cpp, etc.)
     add <workspace>           Adds the current working directory to your registered workspaces
     add                       Adds a new workspace with current directory's name
     add <workspace> <distro>  Adds a new workspace using a specific ROS distro
@@ -179,7 +179,7 @@ rosws_domain()
     fi
 }
 
-rosws_dds()
+rosws_rmw()
 {
     export RMW_IMPLEMENTATION=$1
 }
@@ -189,7 +189,7 @@ rosws_add()
     local ws_name=$1
     local distro=$2
     local ws_parents=(${@:3})
-    local cmdnames=(add activate distro domain dds rm show cd list path clean help)
+    local cmdnames=(add activate distro domain rmw rm show cd list path clean help)
     local -a ros_distros=(
         ardent
         bouncy
@@ -527,8 +527,8 @@ else
                 rosws_domain "$2"
                 break
                 ;;
-            "--dds"|"dds")
-                rosws_dds "$2"
+            "--rmw"|"rmw")
+                rosws_rmw "$2"
                 break
                 ;;
             "-r"|"--remove"|"rm")

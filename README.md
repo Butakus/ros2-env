@@ -251,10 +251,10 @@ This will set the `$ROS_DOMAIN_ID` variable.
 
 ## RMW Implementation
 
-In ROS 2, there are several dds implementations you can use. Some of them are `rmw_fastrtps_cpp` (default), `rmw_cyclonedds_cpp`, `rmw_zenoh_cpp`, etc. To change the implementation to use, you have the `rosws dds` command, which will give you some dds options but you can put others. Example:
+In ROS 2, there are several rmw implementations you can use. Some of them are `rmw_fastrtps_cpp` (default), `rmw_cyclonedds_cpp`, `rmw_zenoh_cpp`, etc. To change the implementation to use, you have the `rosws rmw` command, which will give you some rmw options but you can put others. Example:
 
 ```zsh
-rosws dds <rmw_implementation>
+rosws rmw <rmw_implementation>
 ```
 
 This will set the `$RMW_IMPLEMENTATION` variable.
