@@ -77,6 +77,8 @@ Commands:
     <workspace>               Set the given workspace as the active one
     activate <workspace>      Set the given workspace as the active one
     distro <distro>           Set and source the given ROS 2 distro (humble, iron, rolling, etc.)
+    domain <domain>           Set the ROS 2 domain ID (0-250)
+    rmw <rmw_implementation>  Set the RMW implementation (rmw_fastrtps_cpp, rmw_cyclonedds_cpp, etc.)
     add <workspace>           Adds the current working directory to your registered workspaces
     add                       Adds a new workspace with current directory's name
     add <workspace> <distro>  Adds a new workspace using a specific ROS distro
@@ -166,12 +168,28 @@ rosws_distro()
     source /opt/ros/$1/setup.zsh || rosws_exit_fail "ROS distro '${1}' is not installed"
 }
 
+rosws_domain()
+{
+    local domain=$1
+    if [[ $domain =~ ^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|250)$ ]]
+    then
+        export ROS_DOMAIN_ID=$domain
+    else
+        rosws_exit_fail "ROS DOMAIN ID must be a number between 0 and 250"
+    fi
+}
+
+rosws_rmw()
+{
+    export RMW_IMPLEMENTATION=$1
+}
+
 rosws_add()
 {
     local ws_name=$1
     local distro=$2
     local ws_parents=(${@:3})
-    local cmdnames=(add activate distro rm show cd list path clean help)
+    local cmdnames=(add activate distro domain rmw rm show cd list path clean help)
     local -a ros_distros=(
         ardent
         bouncy
@@ -503,6 +521,14 @@ else
                 ;;
             "--distro"|"distro")
                 rosws_distro "$2"
+                break
+                ;;
+            "--domain"|"domain")
+                rosws_domain "$2"
+                break
+                ;;
+            "--rmw"|"rmw")
+                rosws_rmw "$2"
                 break
                 ;;
             "-r"|"--remove"|"rm")

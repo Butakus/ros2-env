@@ -239,6 +239,26 @@ rosws distro <distro>
 
 This will source the environment in `/opt/ros/<distro>/setup.zsh`, also setting the `$ROS_DISTRO` variable.
 
+## ROS DOMAIN ID
+
+You can select a different ROS_DOMAIN ID between 0 and 250 using `rosws domain` command. The default value is 0. Example:
+
+```zsh
+rosws domain <id>
+```
+
+This will set the `$ROS_DOMAIN_ID` variable.
+
+## RMW Implementation
+
+In ROS 2, there are several rmw implementations you can use. Some of them are `rmw_fastrtps_cpp` (default), `rmw_cyclonedds_cpp`, `rmw_zenoh_cpp`, etc. To change the implementation to use, you have the `rosws rmw` command, which will give you some rmw options but you can put others. Example:
+
+```zsh
+rosws rmw <rmw_implementation>
+```
+
+This will set the `$RMW_IMPLEMENTATION` variable.
+
 ## Chained workspaces
 When adding a new workspace, in addition to setting the base ROS 2 distro, it is also possible to set a list of parent workspaces (or underlay workspaces), that will be sourced before the overlay.
 
