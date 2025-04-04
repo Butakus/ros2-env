@@ -3,22 +3,22 @@
 # Function to load the workspaces from the configuration file
 
 
-export ROSWS_CONFIG=${ROSWS_CONFIG:-$HOME/.config/ros2-env/workspaces}
-
+export ROSWS_CONFIG=${ROSWS_CONFIG:-$HOME/.config/ros2-env}
+local _ROSWS_CONFIG_WS=$ROSWS_CONFIG/workspaces
 
 typeset -A rosws_workspaces
 function load_workspaces() {
     # check if config file exists
-    if [ ! -e "$ROSWS_CONFIG" ]
+    if [ ! -e "$_ROSWS_CONFIG_WS" ]
     then
         # if not, check if config dir exists and create everything
-        if [ ! -d "$(dirname "${ROSWS_CONFIG}")" ]; then
-            mkdir -p "$(dirname "${ROSWS_CONFIG}")"
+        if [ ! -d "$(dirname "${_ROSWS_CONFIG_WS}")" ]; then
+            mkdir -p "$(dirname "${_ROSWS_CONFIG_WS}")"
         fi
-        touch "$ROSWS_CONFIG"
+        touch "$_ROSWS_CONFIG_WS"
     fi
 
-    local -a workspaces_list=( ${(f)"$(< $ROSWS_CONFIG)"} )
+    local -a workspaces_list=( ${(f)"$(< $_ROSWS_CONFIG_WS)"} )
     for line in $workspaces_list
     do
         # Config line example --> foo_ws:rolling:/path/to/foo_ws

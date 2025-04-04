@@ -250,11 +250,11 @@ rosws_add()
             # Get te absolute path of each parent workspace and escape home for clarity
             parents_str+=":${$(readlink -f "$parent_ws")/#$HOME/~}"
         done
-        printf "%q:%s%s:%s\n" "${ws_name}" "${distro}" "${parents_str}" "${PWD/#$HOME/~}" >> "$ROSWS_CONFIG"
+        printf "%q:%s%s:%s\n" "${ws_name}" "${distro}" "${parents_str}" "${PWD/#$HOME/~}" >> "$_ROSWS_CONFIG_WS"
         if (whence sort >/dev/null); then
             local config_tmp=$(mktemp "${TMPDIR:-/tmp}/rosws.XXXXXXXXXX")
-            # use 'cat' below to ensure we respect $ROSWS_CONFIG as a symlink
-            command sort -o "${config_tmp}" "$ROSWS_CONFIG" && command cat "${config_tmp}" >| "$ROSWS_CONFIG" && command rm "${config_tmp}"
+            # use 'cat' below to ensure we respect $_ROSWS_CONFIG_WS as a symlink
+            command sort -o "${config_tmp}" "$_ROSWS_CONFIG_WS" && command cat "${config_tmp}" >| "$_ROSWS_CONFIG_WS" && command rm "${config_tmp}"
         fi
 
         rosws_print_msg "$ROSWS_GREEN" "Workspace added"
@@ -280,7 +280,7 @@ rosws_remove()
             then
                 local config_tmp=$(mktemp "${TMPDIR:-/tmp}/rosws.XXXXXXXXXX")
                 # Copy and delete in two steps in order to preserve symlinks
-                if sed -n "/^${ws_name}:.*$/!p" "$ROSWS_CONFIG" >| "$config_tmp" && command cp "$config_tmp" "$ROSWS_CONFIG" && command rm "$config_tmp"
+                if sed -n "/^${ws_name}:.*$/!p" "$_ROSWS_CONFIG_WS" >| "$config_tmp" && command cp "$config_tmp" "$_ROSWS_CONFIG_WS" && command rm "$config_tmp"
                 then
                     rosws_print_msg "$ROSWS_GREEN" "Workspace removed"
                 else
@@ -297,7 +297,7 @@ rosws_list_all()
 {
     rosws_print_msg "$ROSWS_BLUE" "All workspaces:"
 
-    local entries=$(sed "s:${HOME}:~:g" "$ROSWS_CONFIG")
+    local entries=$(sed "s:${HOME}:~:g" "$_ROSWS_CONFIG_WS")
 
     # Find the max length of all ws names
     local max_ws_name_length=0
@@ -395,7 +395,7 @@ rosws_clean()
                 count=$((count+1))
             fi
         fi
-    done < "$ROSWS_CONFIG"
+    done < "$_ROSWS_CONFIG_WS"
 
     if [[ $count -eq 0 ]]
     then
@@ -403,7 +403,7 @@ rosws_clean()
     else
         if [ ! -z "$rosws_force_mode" ] || rosws_yesorno "Removing ${count} workspaces. Continue? (y/n)"
         then
-            echo "$rosws_tmp" >! "$ROSWS_CONFIG"
+            echo "$rosws_tmp" >! "$_ROSWS_CONFIG_WS"
             rosws_print_msg "$ROSWS_GREEN" "Cleanup complete. ${count} workspace(s) removed"
         else
             rosws_print_msg "$ROSWS_BLUE" "Cleanup aborted"
@@ -445,7 +445,8 @@ rosws_cd()
     fi
 }
 
-local ROSWS_CONFIG=${ROSWS_CONFIG:-$HOME/.config/ros2-env/workspaces}
+local ROSWS_CONFIG=${ROSWS_CONFIG:-$HOME/.config/ros2-env}
+local _ROSWS_CONFIG_WS=$ROSWS_CONFIG/workspaces
 local ROSWS_QUIET=0
 local ROSWS_EXIT_CODE=0
 local ROSWS_DEBUG=0
@@ -466,13 +467,13 @@ then
 fi
 
 # check if config file exists
-# if [ ! -e "$ROSWS_CONFIG" ]
+# if [ ! -e "$_ROSWS_CONFIG_WS" ]
 # then
 #     # if not, check if config dir exists and create everything
-#     if [ ! -d "$(dirname "${ROSWS_CONFIG}")" ]; then
-#         mkdir -p "$(dirname "${ROSWS_CONFIG}")"
+#     if [ ! -d "$(dirname "${_ROSWS_CONFIG_WS}")" ]; then
+#         mkdir -p "$(dirname "${_ROSWS_CONFIG_WS}")"
 #     fi
-#     touch "$ROSWS_CONFIG"
+#     touch "$_ROSWS_CONFIG_WS"
 # fi
 
 # disable extendedglob for the complete rosws execution time
@@ -496,7 +497,7 @@ if [[ ($? -ne 0 || $#* -eq 0) && -z $rosws_print_version ]]
 then
     rosws_print_usage
 
-# check if config file is writeable
+# check if config dir is writeable
 elif [ ! -w "$ROSWS_CONFIG" ]
 then
     # do nothing

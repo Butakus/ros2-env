@@ -8,11 +8,12 @@ zstyle ':completion::complete:rosws::' list-grouped
 zmodload zsh/mapfile
 
 function _rosws() {
-  local ROSWS_CONFIG=${ROSWS_CONFIG:-$HOME/.config/ros2-env/workspaces}
+  local ROSWS_CONFIG=${ROSWS_CONFIG:-$HOME/.config/ros2-env}
+  local _ROSWS_CONFIG_WS=$ROSWS_CONFIG/workspaces
   local ret=1
 
     local -a workspaces_list
-  workspaces_list=( ${(f)"$(< $ROSWS_CONFIG)"} )
+  workspaces_list=( ${(f)"$(< $_ROSWS_CONFIG_WS)"} )
   # Format output to be a bit prettier
   for ((i = 1; i <= $#workspaces_list; i++))
   do
@@ -51,7 +52,7 @@ function _rosws() {
     ws_path=${ws_path/#\~/$HOME}
 
     rosws_workspaces[$ws_name]=$ws_path
-  done < $ROSWS_CONFIG
+  done < $_ROSWS_CONFIG_WS
 
   local -a commands=(
     'activate:Set the given workspace as the active one'

@@ -198,7 +198,7 @@ rosws --version
 
 # Configuration
 
-The configuration file where workspaces are registered is stored by default in `~/.config/ros2-env/workspaces`. It is possible to modify this by setting the environment variable `$ROSWS_CONFIG`.
+The configuration files for the plugin are stored by default in `~/.config/ros2-env`. It is possible to modify this by setting the environment variable `$ROSWS_CONFIG`.
 
 ## Colcon arguments
 It is also possible to control the arguments passed to colcon when using the `cb` command, by setting the `$CB_EXTRA_ARGS` environment variable. For example:
