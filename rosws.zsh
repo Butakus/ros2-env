@@ -202,6 +202,7 @@ rosws_default()
             else
                 echo "$2" >| $_ROSWS_CONFIG_DEFAULT
                 rosws_print_msg "$ROSWS_GREEN" "Default workspace set to '$2'"
+                rosws_activate "$2"
             fi
         fi
     elif [[ $1 == "unset" ]]
@@ -218,6 +219,7 @@ rosws_default()
         else
             echo "$1" >| $_ROSWS_CONFIG_DEFAULT
             rosws_print_msg "$ROSWS_GREEN" "Default workspace set to '$1'"
+            rosws_activate "$1"
         fi
     fi
 }
