@@ -191,6 +191,8 @@ rosws default set foo
 rosws default foo
 ```
 
+Note that after setting a default workspace, it is also activated in the terminal where the command is executed.
+
 Use `rosws default unset` to clear the default workspace and disable the automatic source:
 ```zsh
 # Unset (clear) the default workspace
