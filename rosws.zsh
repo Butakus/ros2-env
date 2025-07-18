@@ -645,18 +645,26 @@ fi
 (( ! $rosws_extglob_is_set )) && setopt extendedglob
 
 unset rosws_extglob_is_set
-# unset -f rosws_add
-# unset -f rosws_activate
-# unset -f rosws_remove
-# unset -f rosws_list_all
-# unset -f rosws_path
-# unset -f rosws_show
-# unset -f rosws_clean
-# unset -f rosws_yesorno
-# unset -f rosws_exit_warn
-# unset -f rosws_exit_fail
-# unset -f rosws_print_msg
-# unset -f rosws_print_usage
+unset -f rosws_activate
+unset -f rosws_add
+unset -f rosws_cd
+unset -f rosws_clean
+unset -f rosws_default
+unset -f rosws_distro
+unset -f rosws_domain
+unset -f rosws_exit_fail
+unset -f rosws_exit_warn
+unset -f rosws_list_all
+unset -f rosws_path
+unset -f rosws_print_msg
+unset -f rosws_print_usage
+unset -f rosws_remove
+unset -f rosws_rmw
+unset -f rosws_show
+unset -f rosws_yesorno
+unset -f parse_ws_data
+unset -f activate_ws
+unset -f load_workspaces
 unset rosws_quiet_mode
 unset rosws_force_mode
 unset rosws_print_version
@@ -664,7 +672,7 @@ unset rosws_parent_ws_paths
 unset rosws_o
 unset ws_distro
 unset ws_path
-unset parse_ws_data
+unset ws_parents
 
 unset args
 

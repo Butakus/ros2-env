@@ -118,8 +118,10 @@ else
     fi
 fi
 
-unset parse_ws_data
+unset -f parse_ws_data
+unset -f _colcon_build_path
+unset -f load_workspaces
 unset ws_distro
+unset ws_name
 unset ws_path
 unset ws_parents
-# unset _colcon_build_path

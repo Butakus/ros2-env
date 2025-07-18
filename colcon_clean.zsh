@@ -59,3 +59,10 @@ else
         rm -rf $ws_path/build $ws_path/install $ws_path/log
     fi
 fi
+
+unset -f parse_ws_data
+unset -f load_workspaces
+unset ws_distro
+unset ws_name
+unset ws_path
+unset ws_parents
