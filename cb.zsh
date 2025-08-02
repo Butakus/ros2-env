@@ -39,8 +39,10 @@ function _colcon_build_path()
     p=$(pwd)
     cd "$1"
     shift
+    # Split CB_EXTRA_ARGS into an array to handle spaces and special characters
+    local extra_args=(${=CB_EXTRA_ARGS})
     # Add arguments defined in CB_EXTRA_ARGS and the ones passed to cb
-    colcon build $CB_EXTRA_ARGS "$@"
+    colcon build "${extra_args[@]}" "$@"
     cd $p
 }
 
