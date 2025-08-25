@@ -4,16 +4,15 @@ A zsh plugin to manage ROS 2 environment and workspaces
 ## What is this and why do I need it?
 If you are working with ROS, you probably have more than one workspace (different projects, robots, maybe even different versions of the same package). This means having to manually source the current workspace we are working on, which is no bueno. Moreover, when using `colcon` to build the workspace, you need to manually `cd` to the workspace's dir and run the command there.
 
-Over the years working with ROS 1 and 2, I have seen (and created) multiple solutions, "hacks", aliases, functions and tears, usually included in the shell configuration to tackle these problems. This plugin is a cured compilation of all that.
+Over the years working with ROS 1 and 2, I have seen (and created) multiple solutions, "hacks", aliases, functions and tears, usually included in the shell configuration to tackle these problems. This plugin is a curated compilation of all that.
 
 The `ros2-env` plugin allows you to define a list of workspaces, and to assign a name to each one of them. Then you can "activate" one of the workspaces, sourcing it and making it the target for the colcon utility functions that are also provided by this plugin.
 
-It is also possible to select a base ROS 2 distro (rolling, jazzzy, etc.) for each workspace, as well as a list of parent workspaces to [overlay on top of them](https://colcon.readthedocs.io/en/released/user/using-multiple-workspaces.html). You can find more info and some examples below.
+It is also possible to select a base ROS 2 distro (rolling, jazzy, etc.) for each workspace, as well as a list of parent workspaces to [overlay on top of them](https://colcon.readthedocs.io/en/released/user/using-multiple-workspaces.html). You can find more info and some examples below.
 
-The active workspace is stored in the environment variable `$ROSWS_ACTIVE_WS`, which can be changed with the `rosws` command described below.
 
 ## Disclaimer
-This workspace management part of the `ros2-env` plugin is heavily inspired by [wd](https://github.com/mfaerevaag/wd). Most of the functions and completions have been extracted from this repository. Check it out if you still don't know about that amazing plugin!
+The workspace management part of the `ros2-env` plugin is heavily inspired by [wd](https://github.com/mfaerevaag/wd). Most of the functions and completions have been extracted from this repository. Check it out if you still don't know about that amazing plugin!
 
 # Installation
 
@@ -49,54 +48,6 @@ Then, in your .zshrc, add the following line:
 ```zsh
 source ${ZDOTDIR:-~}/.zplugins/ros2-env/ros2-env.plugin.zsh
 ```
-
-
-# Colcon build utility
-
-Build the active workspace with the `cb` (colcon build) command. No matter where you are.
-
-### Usage (`cb`)
-
-* Compile the current active workspace:
-
-```zsh
-cb
-```
-
-* Compile any workspace by name:
-
-```zsh
-cb foo
-cb bar
-```
-
-**Note:** If you build any listed workspace with `cb ws_name`, the just-built workspace will be sourced and set as the active one:
-
-```zsh
-# Active workspace is 'foo'
-cb bar
-# Now 'bar' is sourced and 'foo' is not.
-```
-
-## Cleaning workspaces
-If sometimes you feel the need to clear all the compilation files that are generated in the `build`, `install` and `log` subdirectories, this comes in handy (sometimes we just need a compilation break):
-
-### Usage (`colcon_clean`)
-
-* Clean the compilation files from the current active workspace:
-
-```zsh
-colcon_clean
-```
-
-* Clean any workspace by name:
-
-```zsh
-colcon_clean foo
-colcon_clean bar
-```
-
-This command is simmilar to `colcon clean` plugin, except you don't need to cd to the workspace's root dir. On the other hand, it is not possible to clean specific packages (the whole workspace is cleaned).
 
 # Workspace management
 Similar to `wd`, this plugin provides a `rosws` command that allows you to change the active workspace, and to manage the list of registered workspaces. Only one workspace can be active at the same time.
@@ -216,9 +167,60 @@ The usage will be printed also if you call `rosws` with no command
 rosws --version
 ```
 
+# Colcon build utility
+
+Build the active workspace with the `cb` (colcon build) command. No matter where you are.
+
+### Usage (`cb`)
+
+* Compile the current active workspace:
+
+```zsh
+cb
+```
+
+* Compile any workspace by name:
+
+```zsh
+cb foo
+cb bar
+```
+
+**Note:** If you build any listed workspace with `cb ws_name`, the just-built workspace will be sourced and set as the active one:
+
+```zsh
+# Active workspace is 'foo'
+cb bar
+# Now 'bar' is sourced and 'foo' is not.
+```
+
+## Cleaning workspaces
+If sometimes you feel the need to clear all the compilation files that are generated in the `build`, `install` and `log` subdirectories, this comes in handy (sometimes we just need a compilation break):
+
+### Usage (`colcon_clean`)
+
+* Clean the compilation files from the current active workspace:
+
+```zsh
+colcon_clean
+```
+
+* Clean any workspace by name:
+
+```zsh
+colcon_clean foo
+colcon_clean bar
+```
+
+This command is simmilar to `colcon clean` plugin, except you don't need to cd to the workspace's root dir. On the other hand, it is not possible to clean specific packages (the whole workspace is cleaned).
+
 # Configuration
 
 The configuration files for the plugin are stored by default in `~/.config/ros2-env`. It is possible to modify this by setting the environment variable `$ROSWS_CONFIG`.
+
+The active workspace is stored in the environment variable `$ROSWS_ACTIVE_WS`, which is managed by the `rosws` command.
+This variable is also useful if one wants to customize their console prompt.
+
 
 ## Colcon arguments
 It is also possible to control the arguments passed to colcon when using the `cb` command, by setting the `$CB_EXTRA_ARGS` environment variable. For example:
