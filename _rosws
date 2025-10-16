@@ -31,6 +31,7 @@ function _rosws() {
     humble
     iron
     jazzy
+    kilted
     rolling
   )
 
@@ -57,7 +58,7 @@ function _rosws() {
   local -a commands=(
     'activate:Set the given workspace as the active one'
     'default:Set/Unset the default workspace'
-    'distro:Set and source the given ROS 2 distro (humble, iron, rolling, etc.)'
+    'distro:Set and source the given ROS 2 distro (jazzy, kilted, rolling, etc.)'
     'domain:Set and source the given ROS DOMAIN ID'
     'rmw:Set and source the given ROS 2 RMW vendor (rmw_fastrtps_cpp, rmw_cyclonedds_cpp, rmw_zenoh_cpp, etc.)'
     'add:Adds the current working directory to your registered workspaces'

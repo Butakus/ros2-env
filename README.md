@@ -247,8 +247,8 @@ cb --cmake-args -DCMAKE_BUILD_TYPE=Release
 It is possible to select a different distro (rolling, jazzy, etc.) when adding a new workspace. By default, the value stored in `$ROS_DISTRO` is used. Example:
 
 ```zsh
-# Add foo workspace with the ROS 2 humble setup
-rosws add foo humble
+# Add foo workspace with the ROS 2 jazzy setup
+rosws add foo jazzy
 ```
 
 When a workspace is activated, the system will first load the environment for its corresponding ROS distro from `/opt/ros/<distro>/setup.zsh`, and then it will source the workspace environment.

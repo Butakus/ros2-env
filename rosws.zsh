@@ -85,7 +85,7 @@ Commands:
     default                   Print the default workspace
     default set <workspace>   Set the default workspace. It will be activated automatically on every new shell.
     default unset             Unset the default workspace.
-    distro <distro>           Set and source the given ROS 2 distro (humble, iron, rolling, etc.)
+    distro <distro>           Set and source the given ROS 2 distro (jazzy, kilted, rolling, etc.)
     domain <domain>           Set the ROS 2 domain ID (0-250)
     list                      Print all registered workspaces
     path <workspace>          Show the path to given workspace (pwd)
@@ -262,6 +262,7 @@ rosws_add()
         humble
         iron
         jazzy
+        kilted
         rolling
     )
 
